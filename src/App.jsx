@@ -18,7 +18,7 @@ import WarehouseModuleV2 from './components/modules/WarehouseModuleV2'
 import ContractsModuleV2 from './components/modules/ContractsModuleV2'
 import ReportsModule from './components/modules/ReportsModule'
 import MaintenanceModuleV2 from './components/modules/MaintenanceModuleV2'
-import BillingModuleV2 from './components/modules/BillingModuleV2'
+import OffersModuleV2 from './components/modules/OffersModuleV2'
 import ClientPortalModule from './components/modules/ClientPortalModule'
 import StandbyModule from './components/modules/StandbyModule'
 import PhotoDocsModule from './components/modules/PhotoDocsModule'
@@ -65,7 +65,7 @@ function AppRoutes() {
           <Route path="/contracts" element={<ContractsModuleV2 />} />
           <Route path="/reports" element={<ReportsModule />} />
           <Route path="/maintenance" element={<MaintenanceModuleV2 />} />
-          <Route path="/billing" element={<BillingModuleV2 />} />
+          <Route path="/offers" element={<OffersModuleV2 />} />
           <Route path="/portal" element={<ClientPortalModule />} />
           <Route path="/standby" element={<StandbyModule />} />
           <Route path="/photos" element={<PhotoDocsModule />} />

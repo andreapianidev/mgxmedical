@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import {
   DEMO_DEVICES, DEMO_INTERVENTIONS, DEMO_WAREHOUSE, DEMO_CONTRACTS,
-  DEMO_INVOICES, DEMO_SCHEDULED_MAINTENANCE, DEMO_CALENDAR_EVENTS,
+  DEMO_OFFERS, DEMO_SCHEDULED_MAINTENANCE, DEMO_CALENDAR_EVENTS,
   DEMO_SHIFTS, DEMO_NOTIFICATIONS, DEMO_EQUIPMENT, DEMO_FLEET,
   DEMO_ATTACHMENTS, DEMO_ACTIVITY_LOG
 } from '../data/demoData'
@@ -13,7 +13,7 @@ export function GlobalStoreProvider({ children }) {
   const [interventions, setInterventions] = useState(DEMO_INTERVENTIONS)
   const [warehouse, setWarehouse] = useState(DEMO_WAREHOUSE)
   const [contracts, setContracts] = useState(DEMO_CONTRACTS)
-  const [invoices, setInvoices] = useState(DEMO_INVOICES)
+  const [offers, setOffers] = useState(DEMO_OFFERS)
   const [schedMaint, setSchedMaint] = useState(DEMO_SCHEDULED_MAINTENANCE)
   const [calEvents, setCalEvents] = useState(DEMO_CALENDAR_EVENTS)
   const [shifts, setShifts] = useState(DEMO_SHIFTS)
@@ -112,20 +112,26 @@ export function GlobalStoreProvider({ children }) {
     setContracts(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c))
   }, [])
 
-  // --- Invoices CRUD ---
-  const addInvoice = useCallback((invoice) => {
-    const newInv = { ...invoice, id: invoice.id || crypto.randomUUID() }
-    setInvoices(prev => [newInv, ...prev])
-    return newInv
+  // --- Offers CRUD ---
+  const addOffer = useCallback((offer) => {
+    const newOff = { ...offer, id: offer.id || crypto.randomUUID() }
+    setOffers(prev => [newOff, ...prev])
+    return newOff
   }, [])
 
-  const updateInvoice = useCallback((id, updates) => {
-    setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, ...updates } : inv))
+  const updateOffer = useCallback((id, updates) => {
+    setOffers(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o))
   }, [])
 
-  const markInvoicePaid = useCallback((id) => {
-    setInvoices(prev => prev.map(inv =>
-      inv.id === id ? { ...inv, status: 'paid', paidAt: new Date().toISOString() } : inv
+  const acceptOffer = useCallback((id) => {
+    setOffers(prev => prev.map(o =>
+      o.id === id ? { ...o, status: 'accepted', acceptedAt: new Date().toISOString() } : o
+    ))
+  }, [])
+
+  const declineOffer = useCallback((id) => {
+    setOffers(prev => prev.map(o =>
+      o.id === id ? { ...o, status: 'declined' } : o
     ))
   }, [])
 
@@ -216,7 +222,7 @@ export function GlobalStoreProvider({ children }) {
 
   const value = {
     // Data
-    devices, interventions, warehouse, contracts, invoices,
+    devices, interventions, warehouse, contracts, offers,
     schedMaint, calEvents, shifts, notifications, equipment,
     fleet, attachments, activityLog, unreadCount,
     // Interventions
@@ -227,8 +233,8 @@ export function GlobalStoreProvider({ children }) {
     addWarehouseItem, updateWarehouseItem,
     // Contracts
     addContract, updateContract,
-    // Invoices
-    addInvoice, updateInvoice, markInvoicePaid,
+    // Offers
+    addOffer, updateOffer, acceptOffer, declineOffer,
     // Maintenance
     addMaintenance, completeMaintenance,
     // Calendar

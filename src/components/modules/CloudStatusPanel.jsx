@@ -34,7 +34,7 @@ const SECURITY_CARDS = [
 const ACTION_LABELS = {
   'intervention.completed':  'Intervento completato',
   'intervention.acknowledged': 'Intervento preso in carico',
-  'invoice.created':         'Fattura creata',
+  'offer.created':           'Offerta creata',
   'contract.expiry_alert':   'Alert scadenza contratto',
   'user.login':              'Login utente',
   'warehouse.stock_alert':   'Alert scorte magazzino',

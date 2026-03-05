@@ -8,8 +8,8 @@ import StatusChip from '../shared/StatusChip'
 import Modal from '../shared/Modal'
 import EmptyState from '../shared/EmptyState'
 import {
-  Receipt, Plus, Send, CheckCircle2, FileText,
-  AlertTriangle, Mail, Eye, DollarSign,
+  FileText, Plus, Send, CheckCircle2,
+  AlertTriangle, Mail, Eye, DollarSign, XCircle,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -19,68 +19,70 @@ const STATUS_TABS = [
   { key: 'all', label: 'Tutte' },
   { key: 'draft', label: 'Bozze' },
   { key: 'sent', label: 'Inviate' },
-  { key: 'issued', label: 'Emesse' },
-  { key: 'paid', label: 'Pagate' },
-  { key: 'overdue', label: 'Scadute' },
+  { key: 'accepted', label: 'Accettate' },
+  { key: 'declined', label: 'Rifiutate' },
+  { key: 'expired', label: 'Scadute' },
 ]
 
 // ---------------------------------------------------------------------------
-// Helper — compute effective status with auto-overdue
+// Helper — compute effective status with auto-expiry
 // ---------------------------------------------------------------------------
-function getEffectiveStatus(inv) {
-  if (inv.status === 'paid') return 'paid'
-  if (inv.status === 'overdue') return 'overdue'
-  // Auto-overdue: unpaid invoices past dueDate
-  if (inv.dueDate && inv.status !== 'draft') {
-    const due = new Date(inv.dueDate)
-    if (due < new Date()) return 'overdue'
+function getEffectiveStatus(offer) {
+  if (offer.status === 'accepted') return 'accepted'
+  if (offer.status === 'declined') return 'declined'
+  if (offer.status === 'expired') return 'expired'
+  // Auto-expire: offers past validUntil that aren't accepted/declined
+  if (offer.validUntil && offer.status !== 'draft') {
+    const until = new Date(offer.validUntil)
+    if (until < new Date()) return 'expired'
   }
-  return inv.status
+  return offer.status
 }
 
 // ===========================================================================
 // Main Component
 // ===========================================================================
-export default function BillingModuleV2() {
-  const { invoices, addInvoice, updateInvoice, markInvoicePaid, interventions } = useGlobalStore()
+export default function OffersModuleV2() {
+  const { offers, addOffer, updateOffer, acceptOffer, declineOffer, interventions } = useGlobalStore()
 
   const [search, setSearch] = useState('')
   const [statusTab, setStatusTab] = useState('all')
 
   // Modal states
   const [showNewModal, setShowNewModal] = useState(false)
-  const [detailInvoice, setDetailInvoice] = useState(null)
+  const [detailOffer, setDetailOffer] = useState(null)
 
-  // New invoice form
+  // New offer form
   const [newForm, setNewForm] = useState({
     client: '',
     amount: '',
-    dueDate: '',
+    validUntil: '',
+    description: '',
     notes: '',
     interventionId: '',
   })
 
-  // ---------- Enrich invoices with effective status ----------
+  // ---------- Enrich offers with effective status ----------
   const enriched = useMemo(
-    () => invoices.map(inv => ({ ...inv, effectiveStatus: getEffectiveStatus(inv) })),
-    [invoices]
+    () => offers.map(o => ({ ...o, effectiveStatus: getEffectiveStatus(o) })),
+    [offers]
   )
 
   // ---------- KPI calculations ----------
   const kpis = useMemo(() => {
-    const inSospeso = enriched
-      .filter(inv => inv.effectiveStatus === 'sent' || inv.effectiveStatus === 'issued')
-      .reduce((sum, inv) => sum + (inv.amount || 0), 0)
+    const inAttesa = enriched
+      .filter(o => o.effectiveStatus === 'sent')
+      .reduce((sum, o) => sum + (o.amount || 0), 0)
 
-    const incassato = enriched
-      .filter(inv => inv.effectiveStatus === 'paid')
-      .reduce((sum, inv) => sum + (inv.amount || 0), 0)
+    const accettate = enriched
+      .filter(o => o.effectiveStatus === 'accepted')
+      .reduce((sum, o) => sum + (o.amount || 0), 0)
 
-    const bozze = enriched.filter(inv => inv.effectiveStatus === 'draft').length
+    const bozze = enriched.filter(o => o.effectiveStatus === 'draft').length
 
-    const scadute = enriched.filter(inv => inv.effectiveStatus === 'overdue').length
+    const scadute = enriched.filter(o => o.effectiveStatus === 'expired' || o.effectiveStatus === 'declined').length
 
-    return { inSospeso, incassato, bozze, scadute }
+    return { inAttesa, accettate, bozze, scadute }
   }, [enriched])
 
   // ---------- Filtered list ----------
@@ -89,15 +91,16 @@ export default function BillingModuleV2() {
 
     // Status tab
     if (statusTab !== 'all') {
-      list = list.filter(inv => inv.effectiveStatus === statusTab)
+      list = list.filter(o => o.effectiveStatus === statusTab)
     }
 
     // Search
     if (search.trim()) {
       const q = search.toLowerCase()
-      list = list.filter(inv =>
-        (inv.number || '').toLowerCase().includes(q) ||
-        (inv.client || '').toLowerCase().includes(q)
+      list = list.filter(o =>
+        (o.number || '').toLowerCase().includes(q) ||
+        (o.client || '').toLowerCase().includes(q) ||
+        (o.description || '').toLowerCase().includes(q)
       )
     }
 
@@ -106,58 +109,66 @@ export default function BillingModuleV2() {
 
   // ---------- Unique clients for dropdown ----------
   const uniqueClients = useMemo(() => {
-    const clients = [...new Set(invoices.map(inv => inv.client).filter(Boolean))]
+    const clients = [...new Set(offers.map(o => o.client).filter(Boolean))]
     return clients.sort()
-  }, [invoices])
+  }, [offers])
 
-  // ---------- Handlers: Send invoice (mailto) ----------
-  const handleSendInvoice = (inv) => {
-    const subject = encodeURIComponent(`Fattura ${inv.number} — MGX Medical Service`)
+  // ---------- Handlers: Send offer (mailto) ----------
+  const handleSendOffer = (offer) => {
+    const subject = encodeURIComponent(`Offerta ${offer.number} — MGX Medical Service`)
     const body = encodeURIComponent(
       `Gentile Cliente,\n\n` +
-      `In allegato la fattura n. ${inv.number}.\n\n` +
+      `In allegato l'offerta n. ${offer.number}.\n\n` +
       `Dettagli:\n` +
-      `- Cliente: ${inv.client}\n` +
-      `- Importo: ${formatCurrency(inv.amount)}\n` +
-      `- IVA: ${inv.vatRate || 22}%\n` +
-      `- Totale: ${formatCurrency((inv.amount || 0) * 1.22)}\n` +
-      `- Scadenza: ${inv.dueDate ? formatDate(inv.dueDate) : 'Da definire'}\n` +
-      `${inv.notes ? `\nNote: ${inv.notes}` : ''}\n\n` +
+      `- Cliente: ${offer.client}\n` +
+      `- Descrizione: ${offer.description || '-'}\n` +
+      `- Importo: ${formatCurrency(offer.amount)}\n` +
+      `- IVA: ${offer.vatRate || 22}%\n` +
+      `- Totale: ${formatCurrency((offer.amount || 0) * 1.22)}\n` +
+      `- Validità: ${offer.validUntil ? formatDate(offer.validUntil) : 'Da definire'}\n` +
+      `${offer.notes ? `\nNote: ${offer.notes}` : ''}\n\n` +
+      `Restiamo a disposizione per qualsiasi chiarimento.\n\n` +
       `Cordiali saluti,\nMGX Medical Service`
     )
     window.open(`mailto:?subject=${subject}&body=${body}`, '_self')
 
     // Update status to 'sent' if it was draft
-    if (inv.status === 'draft') {
-      updateInvoice(inv.id, { status: 'sent', issueDate: new Date().toISOString() })
+    if (offer.status === 'draft') {
+      updateOffer(offer.id, { status: 'sent', createdAt: offer.createdAt || new Date().toISOString() })
     }
   }
 
-  // ---------- Handlers: Mark as paid ----------
-  const handleMarkPaid = (inv) => {
-    markInvoicePaid(inv.id)
+  // ---------- Handlers: Accept offer ----------
+  const handleAccept = (offer) => {
+    acceptOffer(offer.id)
   }
 
-  // ---------- Handlers: New invoice ----------
+  // ---------- Handlers: Decline offer ----------
+  const handleDecline = (offer) => {
+    declineOffer(offer.id)
+  }
+
+  // ---------- Handlers: New offer ----------
   const openNewModal = () => {
-    setNewForm({ client: '', amount: '', dueDate: '', notes: '', interventionId: '' })
+    setNewForm({ client: '', amount: '', validUntil: '', description: '', notes: '', interventionId: '' })
     setShowNewModal(true)
   }
 
-  const handleCreateInvoice = () => {
+  const handleCreateOffer = () => {
     if (!newForm.client || !newForm.amount) return
 
-    const number = `FT-${new Date().getFullYear()}/${String(invoices.length + 1).padStart(3, '0')}`
-    addInvoice({
+    const number = `OFF-${new Date().getFullYear()}/${String(offers.length + 1).padStart(3, '0')}`
+    addOffer({
       number,
       client: newForm.client,
       amount: parseFloat(newForm.amount),
       vatRate: 22,
       status: 'draft',
-      issueDate: null,
-      dueDate: newForm.dueDate || null,
-      paidAt: null,
+      createdAt: new Date().toISOString(),
+      validUntil: newForm.validUntil || null,
+      acceptedAt: null,
       interventionId: newForm.interventionId || null,
+      description: newForm.description,
       notes: newForm.notes,
     })
     setShowNewModal(false)
@@ -169,21 +180,21 @@ export default function BillingModuleV2() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <SectionHeader title="Fatturazione" subtitle="Gestione fatture e pagamenti">
+      <SectionHeader title="Offerte" subtitle="Gestione preventivi e offerte commerciali">
         <button
           onClick={openNewModal}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
         >
-          <Plus size={16} /> Nuova Fattura
+          <Plus size={16} /> Nuova Offerta
         </button>
       </SectionHeader>
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard icon={Receipt} value={formatCurrency(kpis.inSospeso)} label="In Sospeso" color="#2E86C1" />
-        <KpiCard icon={CheckCircle2} value={formatCurrency(kpis.incassato)} label="Incassato" color="#27AE60" />
+        <KpiCard icon={Send} value={formatCurrency(kpis.inAttesa)} label="In Attesa" color="#2E86C1" />
+        <KpiCard icon={CheckCircle2} value={formatCurrency(kpis.accettate)} label="Accettate" color="#27AE60" />
         <KpiCard icon={FileText} value={kpis.bozze} label="Bozze" color="#7F8C8D" />
-        <KpiCard icon={AlertTriangle} value={kpis.scadute} label="Scadute" color="#C0392B" />
+        <KpiCard icon={AlertTriangle} value={kpis.scadute} label="Scadute / Rifiutate" color="#C0392B" />
       </div>
 
       {/* Filters */}
@@ -191,7 +202,7 @@ export default function BillingModuleV2() {
         <SearchBar
           value={search}
           onChange={setSearch}
-          placeholder="Cerca per numero fattura, cliente..."
+          placeholder="Cerca per numero, cliente, descrizione..."
           className="flex-1 max-w-md"
         />
         <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit overflow-x-auto">
@@ -208,7 +219,7 @@ export default function BillingModuleV2() {
         </div>
       </div>
 
-      {/* Invoices Table */}
+      {/* Offers Table */}
       {filtered.length > 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
@@ -217,44 +228,43 @@ export default function BillingModuleV2() {
                 <tr className="bg-gray-50/60 border-b border-gray-100">
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Numero</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Cliente</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Descrizione</th>
                   <th className="text-right px-4 py-3 font-semibold text-gray-600">Importo</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">IVA</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">Totale</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Data Emissione</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Scadenza</th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-600">Totale (IVA)</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Validità</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Stato</th>
                   <th className="text-right px-4 py-3 font-semibold text-gray-600">Azioni</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(inv => {
-                  const total = (inv.amount || 0) * (1 + (inv.vatRate || 22) / 100)
-                  const isOverdue = inv.effectiveStatus === 'overdue'
+                {filtered.map(offer => {
+                  const total = (offer.amount || 0) * (1 + (offer.vatRate || 22) / 100)
+                  const isExpired = offer.effectiveStatus === 'expired'
+                  const isDeclined = offer.effectiveStatus === 'declined'
                   return (
                     <tr
-                      key={inv.id}
+                      key={offer.id}
                       className={`border-b border-gray-50 hover:bg-blue-50/30 transition-colors
-                        ${isOverdue ? 'bg-red-50/50' : ''}`}
+                        ${isExpired || isDeclined ? 'bg-red-50/50' : ''}`}
                     >
-                      <td className="px-4 py-3 font-mono font-semibold text-blue-700">{inv.number}</td>
-                      <td className="px-4 py-3 text-gray-700">{inv.client}</td>
-                      <td className="px-4 py-3 text-right text-gray-700">{formatCurrency(inv.amount)}</td>
-                      <td className="px-4 py-3 text-right text-gray-500">{inv.vatRate || 22}%</td>
+                      <td className="px-4 py-3 font-mono font-semibold text-blue-700">{offer.number}</td>
+                      <td className="px-4 py-3 text-gray-700">{offer.client}</td>
+                      <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate">{offer.description || '-'}</td>
+                      <td className="px-4 py-3 text-right text-gray-700">{formatCurrency(offer.amount)}</td>
                       <td className="px-4 py-3 text-right font-semibold text-gray-800">{formatCurrency(total)}</td>
-                      <td className="px-4 py-3 text-gray-500">{inv.issueDate ? formatDate(inv.issueDate) : '-'}</td>
                       <td className="px-4 py-3">
-                        <span className={isOverdue ? 'text-red-600 font-semibold' : 'text-gray-500'}>
-                          {inv.dueDate ? formatDate(inv.dueDate) : '-'}
+                        <span className={isExpired ? 'text-red-600 font-semibold' : 'text-gray-500'}>
+                          {offer.validUntil ? formatDate(offer.validUntil) : '-'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <StatusChip status={inv.effectiveStatus} />
+                        <StatusChip status={offer.effectiveStatus} />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
                           {/* Detail button */}
                           <button
-                            onClick={() => setDetailInvoice(inv)}
+                            onClick={() => setDetailOffer(offer)}
                             className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             title="Dettagli"
                           >
@@ -262,33 +272,31 @@ export default function BillingModuleV2() {
                           </button>
 
                           {/* Draft: Send button */}
-                          {inv.effectiveStatus === 'draft' && (
+                          {offer.effectiveStatus === 'draft' && (
                             <button
-                              onClick={() => handleSendInvoice(inv)}
+                              onClick={() => handleSendOffer(offer)}
                               className="px-3 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
                             >
                               Invia
                             </button>
                           )}
 
-                          {/* Sent/Issued: Mark paid */}
-                          {(inv.effectiveStatus === 'sent' || inv.effectiveStatus === 'issued') && (
-                            <button
-                              onClick={() => handleMarkPaid(inv)}
-                              className="px-3 py-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
-                            >
-                              Segna Pagata
-                            </button>
-                          )}
-
-                          {/* Overdue: Mark paid */}
-                          {inv.effectiveStatus === 'overdue' && (
-                            <button
-                              onClick={() => handleMarkPaid(inv)}
-                              className="px-3 py-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
-                            >
-                              Segna Pagata
-                            </button>
+                          {/* Sent: Accept / Decline */}
+                          {offer.effectiveStatus === 'sent' && (
+                            <>
+                              <button
+                                onClick={() => handleAccept(offer)}
+                                className="px-3 py-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                              >
+                                Accetta
+                              </button>
+                              <button
+                                onClick={() => handleDecline(offer)}
+                                className="px-3 py-1 text-xs font-medium bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                              >
+                                Rifiuta
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -300,17 +308,17 @@ export default function BillingModuleV2() {
           </div>
         </div>
       ) : (
-        <EmptyState icon={Receipt} message="Nessuna fattura trovata" description="Prova a modificare i filtri di ricerca." />
+        <EmptyState icon={FileText} message="Nessuna offerta trovata" description="Prova a modificare i filtri di ricerca." />
       )}
 
       {/* ================================================================== */}
-      {/* NEW INVOICE MODAL                                                  */}
+      {/* NEW OFFER MODAL                                                    */}
       {/* ================================================================== */}
       <Modal
         isOpen={showNewModal}
         onClose={() => setShowNewModal(false)}
-        title="Nuova Fattura"
-        subtitle="Crea una nuova fattura"
+        title="Nuova Offerta"
+        subtitle="Crea un preventivo per riparazione o fornitura"
         maxWidth="max-w-lg"
       >
         <div className="space-y-4">
@@ -328,6 +336,17 @@ export default function BillingModuleV2() {
             </select>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Descrizione</label>
+            <input
+              type="text"
+              value={newForm.description}
+              onChange={e => setNewForm(prev => ({ ...prev, description: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+              placeholder="Es. Riparazione ecografo, fornitura ricambi..."
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Importo (netto)</label>
@@ -342,11 +361,11 @@ export default function BillingModuleV2() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data Scadenza</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Valida fino al</label>
               <input
                 type="date"
-                value={newForm.dueDate}
-                onChange={e => setNewForm(prev => ({ ...prev, dueDate: e.target.value }))}
+                value={newForm.validUntil}
+                onChange={e => setNewForm(prev => ({ ...prev, validUntil: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
               />
             </div>
@@ -404,76 +423,86 @@ export default function BillingModuleV2() {
               Annulla
             </button>
             <button
-              onClick={handleCreateInvoice}
+              onClick={handleCreateOffer}
               disabled={!newForm.client || !newForm.amount}
               className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              <Plus size={15} /> Crea Fattura
+              <Plus size={15} /> Crea Offerta
             </button>
           </div>
         </div>
       </Modal>
 
       {/* ================================================================== */}
-      {/* INVOICE DETAIL MODAL                                               */}
+      {/* OFFER DETAIL MODAL                                                 */}
       {/* ================================================================== */}
       <Modal
-        isOpen={!!detailInvoice}
-        onClose={() => setDetailInvoice(null)}
-        title={`Fattura ${detailInvoice?.number || ''}`}
-        subtitle={detailInvoice?.client}
+        isOpen={!!detailOffer}
+        onClose={() => setDetailOffer(null)}
+        title={`Offerta ${detailOffer?.number || ''}`}
+        subtitle={detailOffer?.client}
         maxWidth="max-w-lg"
       >
-        {detailInvoice && (() => {
-          const total = (detailInvoice.amount || 0) * (1 + (detailInvoice.vatRate || 22) / 100)
-          const linkedIntervention = detailInvoice.interventionId
-            ? interventions.find(i => i.id === detailInvoice.interventionId)
+        {detailOffer && (() => {
+          const total = (detailOffer.amount || 0) * (1 + (detailOffer.vatRate || 22) / 100)
+          const linkedIntervention = detailOffer.interventionId
+            ? interventions.find(i => i.id === detailOffer.interventionId)
             : null
 
           return (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <StatusChip status={detailInvoice.effectiveStatus || detailInvoice.status} />
-                {detailInvoice.effectiveStatus === 'overdue' && (
+                <StatusChip status={detailOffer.effectiveStatus || detailOffer.status} />
+                {detailOffer.effectiveStatus === 'expired' && (
                   <span className="text-xs font-semibold text-red-600">SCADUTA</span>
                 )}
+                {detailOffer.effectiveStatus === 'declined' && (
+                  <span className="text-xs font-semibold text-red-600">RIFIUTATA</span>
+                )}
               </div>
+
+              {detailOffer.description && (
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+                  <p className="text-xs text-blue-600 font-medium mb-1">Descrizione</p>
+                  <p className="text-sm text-gray-800">{detailOffer.description}</p>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3 bg-gray-50 rounded-lg p-4">
                 <div>
                   <p className="text-xs text-gray-400">Numero</p>
-                  <p className="text-sm font-mono font-bold text-blue-700">{detailInvoice.number}</p>
+                  <p className="text-sm font-mono font-bold text-blue-700">{detailOffer.number}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Cliente</p>
-                  <p className="text-sm font-medium text-gray-800">{detailInvoice.client}</p>
+                  <p className="text-sm font-medium text-gray-800">{detailOffer.client}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Imponibile</p>
-                  <p className="text-sm font-medium text-gray-800">{formatCurrency(detailInvoice.amount)}</p>
+                  <p className="text-sm font-medium text-gray-800">{formatCurrency(detailOffer.amount)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">IVA ({detailInvoice.vatRate || 22}%)</p>
-                  <p className="text-sm font-medium text-gray-800">{formatCurrency((detailInvoice.amount || 0) * ((detailInvoice.vatRate || 22) / 100))}</p>
+                  <p className="text-xs text-gray-400">IVA ({detailOffer.vatRate || 22}%)</p>
+                  <p className="text-sm font-medium text-gray-800">{formatCurrency((detailOffer.amount || 0) * ((detailOffer.vatRate || 22) / 100))}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Totale</p>
                   <p className="text-sm font-bold text-gray-800">{formatCurrency(total)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Data Emissione</p>
-                  <p className="text-sm text-gray-700">{detailInvoice.issueDate ? formatDate(detailInvoice.issueDate) : '-'}</p>
+                  <p className="text-xs text-gray-400">Data Creazione</p>
+                  <p className="text-sm text-gray-700">{detailOffer.createdAt ? formatDate(detailOffer.createdAt) : '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Scadenza</p>
-                  <p className={`text-sm ${detailInvoice.effectiveStatus === 'overdue' ? 'text-red-600 font-semibold' : 'text-gray-700'}`}>
-                    {detailInvoice.dueDate ? formatDate(detailInvoice.dueDate) : '-'}
+                  <p className="text-xs text-gray-400">Valida fino al</p>
+                  <p className={`text-sm ${detailOffer.effectiveStatus === 'expired' ? 'text-red-600 font-semibold' : 'text-gray-700'}`}>
+                    {detailOffer.validUntil ? formatDate(detailOffer.validUntil) : '-'}
                   </p>
                 </div>
-                {detailInvoice.paidAt && (
+                {detailOffer.acceptedAt && (
                   <div>
-                    <p className="text-xs text-gray-400">Data Pagamento</p>
-                    <p className="text-sm text-green-600 font-medium">{formatDate(detailInvoice.paidAt)}</p>
+                    <p className="text-xs text-gray-400">Accettata il</p>
+                    <p className="text-sm text-green-600 font-medium">{formatDate(detailOffer.acceptedAt)}</p>
                   </div>
                 )}
               </div>
@@ -485,27 +514,35 @@ export default function BillingModuleV2() {
                 </div>
               )}
 
-              {detailInvoice.notes && (
+              {detailOffer.notes && (
                 <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-3">
                   <p className="text-xs text-yellow-700 font-medium mb-1">Note</p>
-                  <p className="text-sm text-gray-700">{detailInvoice.notes}</p>
+                  <p className="text-sm text-gray-700">{detailOffer.notes}</p>
                 </div>
               )}
 
               <div className="flex items-center gap-2 pt-2">
                 <button
-                  onClick={() => handleSendInvoice(detailInvoice)}
+                  onClick={() => handleSendOffer(detailOffer)}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <Mail size={16} /> Invia via Email
                 </button>
-                {detailInvoice.effectiveStatus !== 'paid' && detailInvoice.effectiveStatus !== 'draft' && (
-                  <button
-                    onClick={() => { handleMarkPaid(detailInvoice); setDetailInvoice(null) }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    <CheckCircle2 size={16} /> Segna Pagata
-                  </button>
+                {detailOffer.effectiveStatus === 'sent' && (
+                  <>
+                    <button
+                      onClick={() => { handleAccept(detailOffer); setDetailOffer(null) }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <CheckCircle2 size={16} /> Accetta
+                    </button>
+                    <button
+                      onClick={() => { handleDecline(detailOffer); setDetailOffer(null) }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      <XCircle size={16} /> Rifiuta
+                    </button>
+                  </>
                 )}
               </div>
             </div>

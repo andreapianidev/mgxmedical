@@ -14,6 +14,8 @@ const STATUS_STYLES = {
   sent: { bg: '#D6EAF8', color: '#2E86C1', label: 'Inviato' },
   issued: { bg: '#D6EAF8', color: '#1B4F72', label: 'Emessa' },
   paid: { bg: '#D5F5E3', color: '#27AE60', label: 'Pagata' },
+  accepted: { bg: '#D5F5E3', color: '#27AE60', label: 'Accettata' },
+  declined: { bg: '#FADBD8', color: '#C0392B', label: 'Rifiutata' },
   operative: { bg: '#D5F5E3', color: '#27AE60', label: 'Operativo' },
   standby: { bg: '#FDEBD0', color: '#E67E22', label: 'Standby' },
   maintenance: { bg: '#D6EAF8', color: '#2E86C1', label: 'In Manutenzione' },

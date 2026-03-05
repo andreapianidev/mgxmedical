@@ -48,7 +48,7 @@ function StarRating({ value }) {
 // Main Component
 // ===========================================================================
 export default function ReportsModule() {
-  const { interventions, invoices, contracts } = useGlobalStore()
+  const { interventions, offers, contracts } = useGlobalStore()
 
   const [period, setPeriod] = useState('year')
   const [sortCol, setSortCol] = useState(null)
@@ -64,9 +64,9 @@ export default function ReportsModule() {
   const parzialiPct = totalInterventions > 0 ? ((parziali / totalInterventions) * 100).toFixed(1) : '0.0'
   const escalationPct = totalInterventions > 0 ? ((escalation / totalInterventions) * 100).toFixed(1) : '0.0'
 
-  const fatturato = useMemo(
-    () => invoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + (inv.amount || 0), 0),
-    [invoices]
+  const offerteAccettate = useMemo(
+    () => offers.filter(o => o.status === 'accepted').reduce((sum, o) => sum + (o.amount || 0), 0),
+    [offers]
   )
 
   // ---------- Performance per Cliente ----------
@@ -79,11 +79,11 @@ export default function ReportsModule() {
       if (i.status === 'completed') map[client].slaOk += 1
     })
 
-    // Add invoice spend per client
-    invoices.forEach(inv => {
-      const client = inv.client || 'N/A'
+    // Add accepted offer spend per client
+    offers.forEach(o => {
+      const client = o.client || 'N/A'
       if (!map[client]) map[client] = { client, count: 0, slaOk: 0, spend: 0, uptime: 95 }
-      if (inv.status === 'paid') map[client].spend += inv.amount || 0
+      if (o.status === 'accepted') map[client].spend += o.amount || 0
     })
 
     return Object.values(map).map(c => ({
@@ -91,7 +91,7 @@ export default function ReportsModule() {
       slaPct: c.count > 0 ? ((c.slaOk / c.count) * 100).toFixed(1) : '0.0',
       uptime: (92 + Math.random() * 7).toFixed(1),
     }))
-  }, [interventions, invoices])
+  }, [interventions, offers])
 
   // ---------- Ranking Tecnici ----------
   const techRanking = useMemo(() => {
@@ -218,7 +218,7 @@ export default function ReportsModule() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiCard icon={Clock} value="2.8h" label="MTTR Medio" color="#8E44AD" />
         <KpiCard icon={Shield} value="96.2%" label="SLA Rispettato" color="#0E9AA7" />
-        <KpiCard icon={DollarSign} value={formatCurrency(fatturato)} label="Fatturato" color="#2E86C1" />
+        <KpiCard icon={DollarSign} value={formatCurrency(offerteAccettate)} label="Offerte Accettate" color="#2E86C1" />
         <KpiCard icon={Package} value="€21.200" label="Costo Ricambi" color="#7F8C8D" />
       </div>
 
