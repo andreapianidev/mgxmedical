@@ -1,7 +1,13 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, lazy, Suspense } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
 import { useToast } from '../../contexts/ToastContext'
 import { DEMO_USERS } from '../../data/demoData'
+import {
+  INTERVENTION_TYPES,
+  REQUEST_CHANNELS,
+  WARRANTY_STATUS_OPTIONS,
+  TIPOLOGIA_SERVIZIO,
+} from '../../lib/constants'
 import SectionHeader from '../shared/SectionHeader'
 import SearchBar from '../shared/SearchBar'
 import StatusChip from '../shared/StatusChip'
@@ -9,7 +15,11 @@ import PriorityPill from '../shared/PriorityPill'
 import SlaBadge from '../shared/SlaBadge'
 import Modal from '../shared/Modal'
 import EmptyState from '../shared/EmptyState'
-import { Plus, X, Check, Send, Share2, ChevronRight, ChevronLeft, Mail, MessageCircle, Wrench } from 'lucide-react'
+import CloseInterventionModal from './interventions/CloseInterventionModal'
+import { Plus, X, Check, Send, Share2, ChevronRight, ChevronLeft, Mail, MessageCircle, Wrench, FileText, Download } from 'lucide-react'
+
+// Lazy-load PDF to reduce initial bundle
+const InterventionPdfReport = lazy(() => import('./interventions/InterventionPdfReport'))
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -21,16 +31,12 @@ const STATUS_TABS = [
   { key: 'completed', label: 'Completati' },
 ]
 
-const INTERVENTION_TYPES = ['Guasto', 'Manutenzione', 'Calibrazione', 'Preventiva', 'Installazione']
-
 const PRIORITY_OPTIONS = [
   { value: 'CRITICO', color: '#C0392B', bg: '#FADBD8' },
   { value: 'ALTO', color: '#E67E22', bg: '#FDEBD0' },
   { value: 'MEDIO', color: '#B7950B', bg: '#FEF9E7' },
   { value: 'BASSO', color: '#27AE60', bg: '#D5F5E3' },
 ]
-
-const OUTCOME_OPTIONS = ['Risolto', 'Parziale', 'Escalation']
 
 const WIZARD_STEPS = [
   { num: 1, label: 'Dati intervento' },
@@ -50,6 +56,17 @@ const EMPTY_FORM = {
   interventionType: 'Guasto',
   slaHours: 8,
   description: '',
+  // ── New fields ──
+  address: '',
+  city: '',
+  orderNumber: '',
+  orderDate: '',
+  requestChannel: '',
+  requestReference: '',
+  tipologiaServizio: '',
+  deviceSoftwareVersion: '',
+  warrantyStatus: '',
+  warrantyExpiry: '',
 }
 
 // ---------------------------------------------------------------------------
@@ -107,6 +124,7 @@ export default function InterventionsV2() {
   const [showNewModal, setShowNewModal] = useState(false)
   const [showCloseModal, setShowCloseModal] = useState(null) // intervention object or null
   const [showShareModal, setShowShareModal] = useState(null)
+  const [pdfGenerating, setPdfGenerating] = useState(false)
 
   // ---- Wizard state ----
   const [wizardStep, setWizardStep] = useState(1)
@@ -114,12 +132,6 @@ export default function InterventionsV2() {
   const [selectedTechs, setSelectedTechs] = useState([])
   const [notifySecretary, setNotifySecretary] = useState(false)
   const [createdCode, setCreatedCode] = useState('')
-
-  // ---- Close modal state ----
-  const [closeHealthPost, setCloseHealthPost] = useState(75)
-  const [closeOutcome, setCloseOutcome] = useState('Risolto')
-  const [closeNotes, setCloseNotes] = useState('')
-  const [closeParts, setCloseParts] = useState([]) // { id, code, name, unitCost, qty, selected }
 
   // ---------- Derived data ----------
   const techUsers = useMemo(() => DEMO_USERS.filter(u => u.role === 'technician'), [])
@@ -133,7 +145,6 @@ export default function InterventionsV2() {
   const filtered = useMemo(() => {
     let list = [...interventions]
 
-    // status tab filter — map "pending" tab to include both pending & acknowledged
     if (statusTab !== 'all') {
       if (statusTab === 'pending') {
         list = list.filter(i => i.status === 'pending' || i.status === 'acknowledged')
@@ -142,12 +153,10 @@ export default function InterventionsV2() {
       }
     }
 
-    // tech filter
     if (techFilter) {
       list = list.filter(i => i.techName === techFilter)
     }
 
-    // search
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter(i =>
@@ -208,6 +217,17 @@ export default function InterventionsV2() {
       outcome: null,
       notes: '',
       partsUsed: [],
+      // ── New fields ──
+      address: form.address,
+      city: form.city,
+      orderNumber: form.orderNumber,
+      orderDate: form.orderDate,
+      requestChannel: form.requestChannel,
+      requestReference: form.requestReference,
+      tipologiaServizio: form.tipologiaServizio,
+      deviceSoftwareVersion: form.deviceSoftwareVersion,
+      warrantyStatus: form.warrantyStatus,
+      warrantyExpiry: form.warrantyExpiry,
     }
 
     addIntervention(newInt)
@@ -245,48 +265,48 @@ export default function InterventionsV2() {
   }
 
   // ---------- Handlers: Close Intervention ----------
-  const openCloseModal = (intervention) => {
-    setCloseHealthPost(75)
-    setCloseOutcome('Risolto')
-    setCloseNotes('')
-    // Build parts list from warehouse
-    setCloseParts(warehouse.map(w => ({ id: w.id, code: w.code, name: w.name, unitCost: w.unitCost, qty: 0, selected: false })))
-    setShowCloseModal(intervention)
-  }
-
-  const handleCloseIntervention = () => {
+  const handleCloseIntervention = (closeData) => {
     if (!showCloseModal) return
-
-    const partsUsed = closeParts
-      .filter(p => p.selected && p.qty > 0)
-      .map(p => ({ code: p.code, name: p.name, qty: p.qty, unitCost: p.unitCost }))
-
-    const totalCost = partsUsed.reduce((sum, p) => sum + p.qty * p.unitCost, 0)
-
-    closeIntervention(showCloseModal.id, {
-      healthPost: closeHealthPost,
-      outcome: closeOutcome,
-      notes: closeNotes,
-      partsUsed,
-      totalPartsCost: totalCost,
-    })
-
-    addToast('success', `Intervento ${showCloseModal.code} chiuso — Esito: ${closeOutcome}`)
+    closeIntervention(showCloseModal.id, closeData)
+    addToast('success', `Intervento ${showCloseModal.code} chiuso — Esito: ${closeData.outcome}`)
     setShowCloseModal(null)
   }
 
-  const toggleClosePart = (idx) => {
-    setCloseParts(prev => prev.map((p, i) => i === idx ? { ...p, selected: !p.selected, qty: !p.selected ? 1 : 0 } : p))
+  const handleCloseAndPdf = async (closeData) => {
+    if (!showCloseModal) return
+    const intv = showCloseModal
+    closeIntervention(intv.id, closeData)
+    addToast('success', `Intervento ${intv.code} chiuso — Esito: ${closeData.outcome}`)
+    setShowCloseModal(null)
+
+    // Generate PDF for the closed intervention
+    const mergedIntv = { ...intv, status: 'completed', closedAt: new Date().toISOString(), ...closeData }
+    await generatePdf(mergedIntv)
   }
 
-  const updateClosePartQty = (idx, qty) => {
-    setCloseParts(prev => prev.map((p, i) => i === idx ? { ...p, qty: Math.max(0, Number(qty)) } : p))
+  // ---------- PDF Generation ----------
+  const generatePdf = async (intv) => {
+    setPdfGenerating(true)
+    try {
+      const { pdf } = await import('@react-pdf/renderer')
+      const { default: PdfReport } = await import('./interventions/InterventionPdfReport')
+      const blob = await pdf(<PdfReport intervention={intv} />).toBlob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Rapporto_${intv.code}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 5000)
+      addToast('success', `PDF ${intv.code} generato`)
+    } catch (err) {
+      console.error('PDF generation error:', err)
+      addToast('error', 'Errore nella generazione del PDF')
+    } finally {
+      setPdfGenerating(false)
+    }
   }
-
-  const closeTotalCost = useMemo(
-    () => closeParts.filter(p => p.selected && p.qty > 0).reduce((sum, p) => sum + p.qty * p.unitCost, 0),
-    [closeParts]
-  )
 
   // ---------- Handlers: Share Modal ----------
   const openShareModal = (intervention) => setShowShareModal(intervention)
@@ -322,13 +342,6 @@ export default function InterventionsV2() {
     return `https://wa.me/?text=${text}`
   }
 
-  // ---------- Health slider color ----------
-  const healthColor = (val) => {
-    if (val >= 80) return '#27AE60'
-    if (val >= 50) return '#F39C12'
-    return '#C0392B'
-  }
-
   // ---------- Active interventions count per tech ----------
   const techActiveCounts = useMemo(() => {
     const counts = {}
@@ -339,6 +352,9 @@ export default function InterventionsV2() {
     })
     return counts
   }, [interventions])
+
+  // Input class constant
+  const inputCls = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300'
 
   // =======================================================================
   // RENDER
@@ -363,8 +379,6 @@ export default function InterventionsV2() {
           placeholder="Cerca per codice, apparecchiatura, struttura, tecnico..."
           className="flex-1 max-w-md"
         />
-
-        {/* Tech dropdown */}
         <select
           value={techFilter}
           onChange={(e) => setTechFilter(e.target.value)}
@@ -432,10 +446,20 @@ export default function InterventionsV2() {
                     <div className="flex items-center justify-end gap-2">
                       {intv.status !== 'completed' && (
                         <button
-                          onClick={() => openCloseModal(intv)}
+                          onClick={() => setShowCloseModal(intv)}
                           className="px-3 py-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
                         >
                           Chiudi
+                        </button>
+                      )}
+                      {intv.status === 'completed' && (
+                        <button
+                          onClick={() => generatePdf(intv)}
+                          disabled={pdfGenerating}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
+                          title="Genera Rapporto PDF"
+                        >
+                          <FileText size={15} />
                         </button>
                       )}
                       <button
@@ -489,14 +513,12 @@ export default function InterventionsV2() {
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Apparecchiatura</label>
                 <input type="text" value={form.deviceName} onChange={e => updateForm('deviceName', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                  placeholder="Nome apparecchiatura" />
+                  className={inputCls} placeholder="Nome apparecchiatura" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">S/N</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Modello / Matricola</label>
                 <input type="text" value={form.deviceSerial} onChange={e => updateForm('deviceSerial', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                  placeholder="Numero seriale" />
+                  className={inputCls} placeholder="Numero seriale" />
               </div>
             </div>
 
@@ -504,14 +526,26 @@ export default function InterventionsV2() {
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Struttura</label>
                 <input type="text" value={form.structure} onChange={e => updateForm('structure', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                  placeholder="Ospedale / Clinica" />
+                  className={inputCls} placeholder="Ospedale / Clinica" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Reparto</label>
                 <input type="text" value={form.department} onChange={e => updateForm('department', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                  placeholder="Reparto" />
+                  className={inputCls} placeholder="Reparto" />
+              </div>
+            </div>
+
+            {/* ── NEW: Indirizzo ── */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Via</label>
+                <input type="text" value={form.address} onChange={e => updateForm('address', e.target.value)}
+                  className={inputCls} placeholder="Indirizzo" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Citta</label>
+                <input type="text" value={form.city} onChange={e => updateForm('city', e.target.value)}
+                  className={inputCls} placeholder="Citta" />
               </div>
             </div>
 
@@ -519,14 +553,51 @@ export default function InterventionsV2() {
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Referente</label>
                 <input type="text" value={form.referent} onChange={e => updateForm('referent', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                  placeholder="Nome referente" />
+                  className={inputCls} placeholder="Nome referente" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Email referente</label>
                 <input type="email" value={form.referentEmail} onChange={e => updateForm('referentEmail', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                  placeholder="email@esempio.it" />
+                  className={inputCls} placeholder="email@esempio.it" />
+              </div>
+            </div>
+
+            {/* ── NEW: Ordine ── */}
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Ordine Nr.</label>
+                <input type="text" value={form.orderNumber} onChange={e => updateForm('orderNumber', e.target.value)}
+                  className={inputCls} placeholder="N. ordine" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Data ordine</label>
+                <input type="date" value={form.orderDate} onChange={e => updateForm('orderDate', e.target.value)}
+                  className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Rif.</label>
+                <input type="text" value={form.requestReference} onChange={e => updateForm('requestReference', e.target.value)}
+                  className={inputCls} placeholder="Riferimento" />
+              </div>
+            </div>
+
+            {/* ── NEW: Richiesta Intervento ── */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Richiesta intervento</label>
+                <select value={form.requestChannel} onChange={e => updateForm('requestChannel', e.target.value)}
+                  className={`${inputCls} bg-white`}>
+                  <option value="">-- Seleziona --</option>
+                  {REQUEST_CHANNELS.map(ch => <option key={ch.value} value={ch.value}>{ch.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Tipologia servizio</label>
+                <select value={form.tipologiaServizio} onChange={e => updateForm('tipologiaServizio', e.target.value)}
+                  className={`${inputCls} bg-white`}>
+                  <option value="">-- Seleziona --</option>
+                  {TIPOLOGIA_SERVIZIO.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
               </div>
             </div>
 
@@ -534,22 +605,50 @@ export default function InterventionsV2() {
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Tipo intervento</label>
                 <select value={form.interventionType} onChange={e => updateForm('interventionType', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+                  className={`${inputCls} bg-white`}>
                   {INTERVENTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">SLA (ore)</label>
                 <input type="number" min="1" value={form.slaHours} onChange={e => updateForm('slaHours', Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                  className={inputCls} />
               </div>
             </div>
 
+            {/* ── NEW: Dispositivo extra ── */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Ver. Software</label>
+                <input type="text" value={form.deviceSoftwareVersion} onChange={e => updateForm('deviceSoftwareVersion', e.target.value)}
+                  className={inputCls} placeholder="Es. v3.2.1" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Stato garanzia</label>
+                <select value={form.warrantyStatus} onChange={e => updateForm('warrantyStatus', e.target.value)}
+                  className={`${inputCls} bg-white`}>
+                  <option value="">-- Seleziona --</option>
+                  {WARRANTY_STATUS_OPTIONS.map(ws => <option key={ws.value} value={ws.value}>{ws.label}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {form.warrantyStatus === 'garanzia' && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Garanzia fino al</label>
+                  <input type="date" value={form.warrantyExpiry} onChange={e => updateForm('warrantyExpiry', e.target.value)}
+                    className={inputCls} />
+                </div>
+                <div />
+              </div>
+            )}
+
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Descrizione problema</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Motivazione / Richiesta</label>
               <textarea rows={3} value={form.description} onChange={e => updateForm('description', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
-                placeholder="Descrivi il problema..." />
+                className={`${inputCls} resize-none`}
+                placeholder="Descrivi il problema / motivazione dell'intervento..." />
             </div>
 
             <div className="flex justify-end pt-2">
@@ -635,21 +734,51 @@ export default function InterventionsV2() {
                 <span className="font-medium text-gray-800">{form.deviceName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">S/N:</span>
+                <span className="text-gray-500">Modello/Matricola:</span>
                 <span className="text-gray-700">{form.deviceSerial || '-'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Struttura:</span>
                 <span className="text-gray-700">{form.structure} / {form.department || '-'}</span>
               </div>
+              {(form.address || form.city) && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Indirizzo:</span>
+                  <span className="text-gray-700">{[form.address, form.city].filter(Boolean).join(', ')}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-500">Referente:</span>
                 <span className="text-gray-700">{form.referent || '-'}</span>
               </div>
+              {form.orderNumber && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Ordine:</span>
+                  <span className="text-gray-700">{form.orderNumber} {form.orderDate ? `del ${form.orderDate}` : ''}</span>
+                </div>
+              )}
+              {form.requestChannel && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Richiesta via:</span>
+                  <span className="text-gray-700">{REQUEST_CHANNELS.find(c => c.value === form.requestChannel)?.label || form.requestChannel}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-500">Tipo:</span>
                 <span className="text-gray-700">{form.interventionType}</span>
               </div>
+              {form.tipologiaServizio && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Tipologia servizio:</span>
+                  <span className="text-gray-700">{form.tipologiaServizio}</span>
+                </div>
+              )}
+              {form.warrantyStatus && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Garanzia:</span>
+                  <span className="text-gray-700">{WARRANTY_STATUS_OPTIONS.find(w => w.value === form.warrantyStatus)?.label}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-500">SLA:</span>
                 <span className="text-gray-700">{form.slaHours} ore</span>
@@ -664,7 +793,7 @@ export default function InterventionsV2() {
               </div>
               {form.description && (
                 <div className="pt-1 border-t border-gray-200">
-                  <span className="text-gray-500 block mb-1">Descrizione:</span>
+                  <span className="text-gray-500 block mb-1">Motivazione/Richiesta:</span>
                   <span className="text-gray-700">{form.description}</span>
                 </div>
               )}
@@ -722,101 +851,16 @@ export default function InterventionsV2() {
       </Modal>
 
       {/* ================================================================== */}
-      {/* CLOSE INTERVENTION MODAL                                           */}
+      {/* CLOSE INTERVENTION MODAL (extracted component)                     */}
       {/* ================================================================== */}
-      <Modal
+      <CloseInterventionModal
+        intervention={showCloseModal}
         isOpen={!!showCloseModal}
         onClose={() => setShowCloseModal(null)}
-        title={`Chiudi Intervento ${showCloseModal?.code || ''}`}
-        subtitle={showCloseModal?.deviceName}
-        maxWidth="max-w-xl"
-      >
-        {showCloseModal && (
-          <div className="space-y-5">
-            {/* Health Score Post */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Health Score Post-Intervento: <span className="font-bold" style={{ color: healthColor(closeHealthPost) }}>{closeHealthPost}%</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="range" min="0" max="100" value={closeHealthPost}
-                  onChange={e => setCloseHealthPost(Number(e.target.value))}
-                  className="w-full h-2 rounded-lg appearance-none cursor-pointer"
-                  style={{
-                    background: `linear-gradient(to right, ${healthColor(closeHealthPost)} 0%, ${healthColor(closeHealthPost)} ${closeHealthPost}%, #e5e7eb ${closeHealthPost}%, #e5e7eb 100%)`,
-                  }}
-                />
-              </div>
-              <div className="flex justify-between text-xs text-gray-400 mt-1">
-                <span>0</span><span>50</span><span>100</span>
-              </div>
-            </div>
-
-            {/* Esito */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Esito</label>
-              <select value={closeOutcome} onChange={e => setCloseOutcome(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
-                {OUTCOME_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-              </select>
-            </div>
-
-            {/* Ricambi utilizzati */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Ricambi utilizzati</label>
-              <div className="space-y-1.5 max-h-48 overflow-y-auto border border-gray-100 rounded-lg p-2">
-                {closeParts.map((part, idx) => (
-                  <div key={part.id} className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${part.selected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
-                    <input type="checkbox" checked={part.selected} onChange={() => toggleClosePart(idx)}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-gray-800 truncate">{part.name}</div>
-                      <div className="text-xs text-gray-400">{part.code} - EUR {part.unitCost.toFixed(2)}/pz</div>
-                    </div>
-                    {part.selected && (
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <label className="text-xs text-gray-500">Qty:</label>
-                        <input type="number" min="0" value={part.qty}
-                          onChange={e => updateClosePartQty(idx, e.target.value)}
-                          className="w-14 px-1.5 py-1 border border-gray-200 rounded text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-300" />
-                        <span className="text-xs text-gray-500 w-20 text-right">
-                          EUR {(part.qty * part.unitCost).toFixed(2)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {closeTotalCost > 0 && (
-                <div className="text-right text-sm font-semibold text-gray-700 mt-2">
-                  Totale ricambi: <span className="text-blue-700">EUR {closeTotalCost.toFixed(2)}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Note tecniche */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Note tecniche</label>
-              <textarea rows={3} value={closeNotes} onChange={e => setCloseNotes(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
-                placeholder="Note sull'intervento eseguito..." />
-            </div>
-
-            {/* Submit */}
-            <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowCloseModal(null)}
-                className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
-                Annulla
-              </button>
-              <button onClick={handleCloseIntervention}
-                className="flex items-center gap-2 px-5 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
-                <Check size={15} /> Chiudi Intervento
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
+        onSubmit={handleCloseIntervention}
+        onSubmitAndPdf={handleCloseAndPdf}
+        warehouse={warehouse}
+      />
 
       {/* ================================================================== */}
       {/* SHARE MODAL                                                        */}
@@ -829,7 +873,6 @@ export default function InterventionsV2() {
       >
         {showShareModal && (
           <div className="space-y-4">
-            {/* Info summary */}
             <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Codice:</span>
@@ -876,6 +919,17 @@ export default function InterventionsV2() {
                 <MessageCircle size={18} /> WhatsApp
               </a>
             </div>
+
+            {/* PDF download for completed interventions */}
+            {showShareModal.status === 'completed' && (
+              <button
+                onClick={() => generatePdf(showShareModal)}
+                disabled={pdfGenerating}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-700 rounded-lg text-sm font-medium border border-red-200 hover:bg-red-100 transition-colors disabled:opacity-40"
+              >
+                <Download size={18} /> {pdfGenerating ? 'Generando PDF...' : 'Scarica Rapporto PDF'}
+              </button>
+            )}
           </div>
         )}
       </Modal>

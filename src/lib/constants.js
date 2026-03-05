@@ -94,6 +94,73 @@ export const INTERVENTION_TYPES = [
   'Calibrazione',
   'Preventiva',
   'Installazione',
+  'Manutenzione Correttiva',
+  'Manutenzione Preventiva',
+  'Verifica Sicurezza Elettrica',
+  'Controllo Funzionale',
+  'Collaudo',
+]
+
+// ─── Tipologia Servizio (foglio di lavoro cartaceo) ─────────────────────────
+
+export const TIPOLOGIA_SERVIZIO = [
+  'Manutenzione Correttiva',
+  'Manutenzione Preventiva',
+  'Verifica Sicurezza Elettrica',
+  'Controllo Funzionale',
+  'Collaudo',
+]
+
+// ─── Canale Richiesta Intervento ────────────────────────────────────────────
+
+export const REQUEST_CHANNELS = [
+  { value: 'email', label: 'Posta Elettronica' },
+  { value: 'fax', label: 'Fax' },
+  { value: 'verbale_telefonica', label: 'Verbale / Telefonica' },
+]
+
+// ─── Stato Garanzia / Pagamento ─────────────────────────────────────────────
+
+export const WARRANTY_STATUS_OPTIONS = [
+  { value: 'garanzia', label: 'Garanzia' },
+  { value: 'fuori_garanzia', label: 'Fuori Garanzia' },
+  { value: 'service', label: 'Service' },
+  { value: 'pagamento', label: 'Pagamento' },
+]
+
+// ─── Tipo di Guasto ─────────────────────────────────────────────────────────
+
+export const FAULT_TYPES = [
+  'Elettrico',
+  'Elettronico',
+  'Meccanico',
+  'Software',
+  'Altro',
+]
+
+// ─── Checklist Controlli e Verifiche (20 voci) ──────────────────────────────
+
+export const CHECKLIST_ITEMS = [
+  { key: 'tensione_cavo_alimentazione', label: 'Tensione / Cavo Alimentazione' },
+  { key: 'parti_danneggiate_deformate', label: 'Parti Danneggiate / Deformate' },
+  { key: 'cavetteria_connettori', label: 'Cavetteria e Connettori' },
+  { key: 'sonde_elettrodi_sensori', label: 'Sonde / Elettrodi / Sensori' },
+  { key: 'temperatura_apparecchiatura', label: 'Temperatura Apparecchiatura' },
+  { key: 'pulizia_esterna_interna', label: 'Pulizia Esterna / Interna' },
+  { key: 'terra_protezione', label: 'Terra di Protezione' },
+  { key: 'sistema_ottico', label: 'Sistema Ottico' },
+  { key: 'sistema_meccanico', label: 'Sistema Meccanico' },
+  { key: 'circuito_idraulico', label: 'Circuito Idraulico' },
+  { key: 'indicatore_spie_luminose', label: 'Indicatore e Spie Luminose' },
+  { key: 'tarature_calibrazioni', label: 'Tarature / Calibrazioni' },
+  { key: 'filtri', label: 'Filtri' },
+  { key: 'acquisizione_riproduzione_stampa', label: 'Acquisizione / Riproduzione / Stampa' },
+  { key: 'hardware', label: 'Hardware' },
+  { key: 'connettivita', label: 'Connettivita (Cablata / Wireless)' },
+  { key: 'software', label: 'Software' },
+  { key: 'database_backup', label: 'Database / Backup Dati' },
+  { key: 'comandi_operatore', label: 'Op. Comandi Acc. Operatore' },
+  { key: 'prove_funzionamento', label: 'Prove di Funzionamento' },
 ]
 
 export const MDR_CATEGORIES = [
