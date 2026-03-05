@@ -230,7 +230,7 @@ export default function InterventionsV2() {
       warrantyExpiry: form.warrantyExpiry,
     }
 
-    addIntervention(newInt)
+    addIntervention(newInt).catch(() => addToast('error', 'Errore nel salvataggio'))
     setCreatedCode(code)
     setWizardStep(4)
     addToast('success', `Intervento ${code} creato con successo`)
@@ -265,9 +265,9 @@ export default function InterventionsV2() {
   }
 
   // ---------- Handlers: Close Intervention ----------
-  const handleCloseIntervention = (closeData) => {
+  const handleCloseIntervention = async (closeData) => {
     if (!showCloseModal) return
-    closeIntervention(showCloseModal.id, closeData)
+    closeIntervention(showCloseModal.id, closeData).catch(() => addToast('error', 'Errore nella chiusura'))
     addToast('success', `Intervento ${showCloseModal.code} chiuso — Esito: ${closeData.outcome}`)
     setShowCloseModal(null)
   }
@@ -275,7 +275,7 @@ export default function InterventionsV2() {
   const handleCloseAndPdf = async (closeData) => {
     if (!showCloseModal) return
     const intv = showCloseModal
-    closeIntervention(intv.id, closeData)
+    await closeIntervention(intv.id, closeData).catch(() => addToast('error', 'Errore nella chiusura'))
     addToast('success', `Intervento ${intv.code} chiuso — Esito: ${closeData.outcome}`)
     setShowCloseModal(null)
 

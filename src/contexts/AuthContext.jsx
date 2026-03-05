@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { DEMO_USERS } from '../data/demoData'
+import { api } from '../lib/api'
 
 const AuthContext = createContext(null)
 
@@ -7,30 +7,38 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // Restore session on mount via /api/auth/me
   useEffect(() => {
-    const saved = localStorage.getItem('msm_session')
-    if (saved) {
-      try {
-        setUser(JSON.parse(saved))
-      } catch {}
-    }
-    setLoading(false)
+    api.get('/auth/me')
+      .then(data => setUser(data.user))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false))
   }, [])
 
-  const login = useCallback((email, password) => {
-    const found = DEMO_USERS.find(u => u.email === email && u.password === password)
-    if (found) {
-      const userData = { id: found.id, name: found.name, avatar: found.avatar, role: found.role, email: found.email, color: found.color }
-      setUser(userData)
-      localStorage.setItem('msm_session', JSON.stringify(userData))
+  // Listen for 401 from api client
+  useEffect(() => {
+    const onExpired = () => {
+      setUser(null)
+    }
+    window.addEventListener('auth:expired', onExpired)
+    return () => window.removeEventListener('auth:expired', onExpired)
+  }, [])
+
+  const login = useCallback(async (email, password) => {
+    try {
+      const data = await api.post('/auth/login', { email, password })
+      setUser(data.user)
       return { success: true }
+    } catch (err) {
+      return { success: false, error: err.message || 'Credenziali non valide' }
     }
-    return { success: false, error: 'Credenziali non valide' }
   }, [])
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await api.post('/auth/logout')
+    } catch {}
     setUser(null)
-    localStorage.removeItem('msm_session')
   }, [])
 
   const value = {

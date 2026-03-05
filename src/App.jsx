@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ToastProvider } from './contexts/ToastContext'
-import { GlobalStoreProvider } from './contexts/GlobalStoreContext'
+import { GlobalStoreProvider, useGlobalStore } from './contexts/GlobalStoreContext'
 import AppShell from './components/layout/AppShell'
 import LoginScreen from './components/LoginScreen'
 
@@ -51,6 +51,7 @@ function AppRoutes() {
 
   return (
     <GlobalStoreProvider>
+      <StoreLoadingGate>
       <AppShell>
         <Routes>
           <Route path="/dashboard" element={<Dashboard />} />
@@ -75,8 +76,51 @@ function AppRoutes() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AppShell>
+      </StoreLoadingGate>
     </GlobalStoreProvider>
   )
+}
+
+function StoreLoadingGate({ children }) {
+  const { loading, error } = useGlobalStore()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4" style={{ background: 'linear-gradient(135deg, #1B4F72, #148F77)' }}>
+            <svg className="animate-spin h-8 w-8 text-white" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </div>
+          <p className="text-sm text-gray-500">Caricamento dati...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 bg-red-100">
+            <span className="text-2xl text-red-600">!</span>
+          </div>
+          <p className="text-sm text-red-600 mb-2">Errore di connessione</p>
+          <p className="text-xs text-gray-500">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+          >
+            Riprova
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return children
 }
 
 export default function App() {

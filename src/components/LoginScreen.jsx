@@ -22,10 +22,7 @@ export default function LoginScreen() {
     setError('')
     setLoading(true)
 
-    // simulate small delay
-    await new Promise(r => setTimeout(r, 300))
-
-    const result = login(email, password)
+    const result = await login(email, password)
     if (result.success) {
       addToast('success', 'Accesso effettuato con successo')
       navigate('/dashboard')
@@ -37,8 +34,7 @@ export default function LoginScreen() {
 
   const handleQuickLogin = async (user) => {
     setLoading(true)
-    await new Promise(r => setTimeout(r, 200))
-    const result = login(user.email, user.password)
+    const result = await login(user.email, user.password)
     if (result.success) {
       addToast('success', `Benvenuto, ${user.name}!`)
       navigate('/dashboard')
