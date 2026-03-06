@@ -136,7 +136,7 @@ export default function Dashboard() {
                 {searchResults.map(d => (
                   <div
                     key={d.id}
-                    onClick={() => navigate(`/devices/${d.id}`)}
+                    onClick={() => navigate('/registry')}
                     className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all"
                   >
                     <div className="flex items-start justify-between mb-2">
@@ -242,7 +242,7 @@ export default function Dashboard() {
               return (
                 <div
                   key={d.id}
-                  onClick={() => navigate(`/devices/${d.id}`)}
+                  onClick={() => navigate('/registry')}
                   className="flex items-center justify-between p-3 border border-gray-50 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
                 >
                   <div className="min-w-0 flex-1 mr-3">
