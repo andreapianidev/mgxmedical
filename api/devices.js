@@ -29,13 +29,18 @@ export default async function handler(req, res) {
         INSERT INTO devices (
           tenant_id, name, brand, model, serial_number, inventory_code,
           category, class_mdr, location, client, install_date, warranty_end,
-          status, parent_id, health_score, notes, service_hours, mtbf
+          status, parent_id, supplier, list_price, has_serial, has_lot,
+          expiry_date, software_version, health_score, notes, service_hours, mtbf
         ) VALUES (
           ${user.tenantId}, ${b.name}, ${b.brand || null}, ${b.model || null},
           ${b.serialNumber || null}, ${b.inventoryCode || null},
           ${b.category || null}, ${b.classMdr || null}, ${b.location || null},
           ${b.client || null}, ${b.installDate || null}, ${b.warrantyEnd || null},
           ${b.status || 'operative'}, ${b.parentId || null},
+          ${b.supplier || null}, ${b.listPrice || null},
+          ${b.hasSerial !== undefined ? b.hasSerial : true},
+          ${b.hasLot !== undefined ? b.hasLot : false},
+          ${b.expiryDate || null}, ${b.softwareVersion || null},
           ${b.healthScore || 100}, ${b.notes || null},
           ${b.serviceHours || 0}, ${b.mtbf || null}
         ) RETURNING *

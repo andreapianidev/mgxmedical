@@ -38,24 +38,26 @@ export default async function handler(req, res) {
 
     // --- 2. Seed Devices ---
     const devices = [
-      { name: 'Ventilatore Polmonare', brand: 'Maquet', model: 'SERVO-U', serialNumber: 'SV2024-001', inventoryCode: 'INV-VP-001', category: 'Terapeutica', classMdr: 'IIb', location: 'Reparto Terapia Intensiva - Piano 2', client: 'Osp. San Raffaele', installDate: '2024-03-15', warrantyEnd: '2026-03-15', status: 'operative', healthScore: 92, serviceHours: 4820, mtbf: 2200 },
-      { name: 'Monitor Multiparametrico', brand: 'Philips', model: 'IntelliVue MX800', serialNumber: 'MX2024-002', inventoryCode: 'INV-MM-002', category: 'Monitoraggio', classMdr: 'IIa', location: 'Reparto Cardiologia - Piano 3', client: 'Osp. San Raffaele', installDate: '2024-01-10', warrantyEnd: '2026-01-10', status: 'operative', healthScore: 88, serviceHours: 6200, mtbf: 3100 },
-      { name: 'Ecografo Portatile', brand: 'GE Healthcare', model: 'Venue Go', serialNumber: 'VG2024-003', inventoryCode: 'INV-EP-003', category: 'Diagnostica', classMdr: 'IIa', location: 'Ambulatorio Ecografia - Piano 1', client: 'Osp. Niguarda', installDate: '2024-06-01', warrantyEnd: '2026-06-01', status: 'operative', healthScore: 95, serviceHours: 1800, mtbf: 4000 },
-      { name: 'Defibrillatore', brand: 'Zoll', model: 'R-Series Plus', serialNumber: 'ZR2024-004', inventoryCode: 'INV-DF-004', category: 'Terapeutica', classMdr: 'III', location: 'Pronto Soccorso', client: 'Osp. Niguarda', installDate: '2023-11-20', warrantyEnd: '2025-11-20', status: 'operative', healthScore: 78, serviceHours: 3400, mtbf: 1800 },
-      { name: 'Pompa Infusione', brand: 'B. Braun', model: 'Infusomat Space', serialNumber: 'IS2024-005', inventoryCode: 'INV-PI-005', category: 'Terapeutica', classMdr: 'IIb', location: 'Reparto Oncologia - Piano 4', client: 'Osp. San Raffaele', installDate: '2024-02-28', warrantyEnd: '2026-02-28', status: 'maintenance', healthScore: 45, serviceHours: 5600, mtbf: 1500 },
-      { name: 'Elettrocardiografo', brand: 'GE Healthcare', model: 'MAC 2000', serialNumber: 'MC2024-006', inventoryCode: 'INV-EC-006', category: 'Diagnostica', classMdr: 'IIa', location: 'Ambulatorio Cardiologia', client: 'Clinica Humanitas', installDate: '2024-04-15', warrantyEnd: '2026-04-15', status: 'operative', healthScore: 91, serviceHours: 2100, mtbf: 3500 },
-      { name: 'Centrifuga da Laboratorio', brand: 'Eppendorf', model: '5804 R', serialNumber: 'EP2024-007', inventoryCode: 'INV-CL-007', category: 'Laboratorio', classMdr: 'I', location: 'Laboratorio Analisi - Piano 0', client: 'Osp. San Raffaele', installDate: '2024-05-10', warrantyEnd: '2026-05-10', status: 'operative', healthScore: 97, serviceHours: 1200, mtbf: 5000 },
-      { name: 'Autoclave', brand: 'Tuttnauer', model: '3870EA', serialNumber: 'TT2024-008', inventoryCode: 'INV-AC-008', category: 'Altro', classMdr: 'IIa', location: 'Centrale Sterilizzazione', client: 'Osp. Niguarda', installDate: '2023-09-01', warrantyEnd: '2025-09-01', status: 'operative', healthScore: 82, serviceHours: 7800, mtbf: 2000 },
-      { name: 'Microscopio Chirurgico', brand: 'Zeiss', model: 'KINEVO 900', serialNumber: 'ZK2024-009', inventoryCode: 'INV-MC-009', category: 'Diagnostica', classMdr: 'I', location: 'Sala Operatoria 3 - Piano 2', client: 'Clinica Humanitas', installDate: '2024-07-01', warrantyEnd: '2026-07-01', status: 'standby', healthScore: 99, serviceHours: 400, mtbf: 8000 },
-      { name: 'Tavolo Operatorio', brand: 'Maquet', model: 'Magnus', serialNumber: 'MG2024-010', inventoryCode: 'INV-TO-010', category: 'Altro', classMdr: 'I', location: 'Sala Operatoria 1 - Piano 2', client: 'Osp. San Raffaele', installDate: '2023-06-15', warrantyEnd: '2025-06-15', status: 'operative', healthScore: 86, serviceHours: 5200, mtbf: 3000 },
+      { name: 'Ventilatore Polmonare', brand: 'Maquet', model: 'SERVO-U', serialNumber: 'SV2024-001', inventoryCode: 'INV-VP-001', category: 'Terapeutica', classMdr: 'IIb', location: 'Reparto Terapia Intensiva - Piano 2', client: 'Osp. San Raffaele', installDate: '2024-03-15', warrantyEnd: '2026-03-15', status: 'operative', healthScore: 92, serviceHours: 4820, mtbf: 2200, supplier: 'Maquet Medical Italia S.r.l.', listPrice: 45000, hasSerial: true, hasLot: false, softwareVersion: '4.2.1' },
+      { name: 'Monitor Multiparametrico', brand: 'Philips', model: 'IntelliVue MX800', serialNumber: 'MX2024-002', inventoryCode: 'INV-MM-002', category: 'Monitoraggio', classMdr: 'IIa', location: 'Reparto Cardiologia - Piano 3', client: 'Osp. San Raffaele', installDate: '2024-01-10', warrantyEnd: '2026-01-10', status: 'operative', healthScore: 88, serviceHours: 6200, mtbf: 3100, supplier: 'Philips Medical Systems S.p.A.', listPrice: 32000, hasSerial: true, hasLot: false, softwareVersion: 'Rev M.02.01' },
+      { name: 'Ecografo Portatile', brand: 'GE Healthcare', model: 'Venue Go', serialNumber: 'VG2024-003', inventoryCode: 'INV-EP-003', category: 'Diagnostica', classMdr: 'IIa', location: 'Ambulatorio Ecografia - Piano 1', client: 'Osp. Niguarda', installDate: '2024-06-01', warrantyEnd: '2026-06-01', status: 'operative', healthScore: 95, serviceHours: 1800, mtbf: 4000, supplier: 'GE Healthcare Italia S.r.l.', listPrice: 28000, hasSerial: true, hasLot: false, softwareVersion: 'R3.1' },
+      { name: 'Defibrillatore', brand: 'Zoll', model: 'R-Series Plus', serialNumber: 'ZR2024-004', inventoryCode: 'INV-DF-004', category: 'Terapeutica', classMdr: 'III', location: 'Pronto Soccorso', client: 'Osp. Niguarda', installDate: '2023-11-20', warrantyEnd: '2025-11-20', status: 'operative', healthScore: 78, serviceHours: 3400, mtbf: 1800, supplier: 'ZOLL Medical Italia S.r.l. a socio unico', listPrice: 15000, hasSerial: true, hasLot: false, softwareVersion: '2.31' },
+      { name: 'Pompa Infusione', brand: 'B. Braun', model: 'Infusomat Space', serialNumber: 'IS2024-005', inventoryCode: 'INV-PI-005', category: 'Terapeutica', classMdr: 'IIb', location: 'Reparto Oncologia - Piano 4', client: 'Osp. San Raffaele', installDate: '2024-02-28', warrantyEnd: '2026-02-28', status: 'maintenance', healthScore: 45, serviceHours: 5600, mtbf: 1500, supplier: 'B. Braun Milano S.p.A.', listPrice: 8500, hasSerial: true, hasLot: false, softwareVersion: '688E' },
+      { name: 'Elettrocardiografo', brand: 'GE Healthcare', model: 'MAC 2000', serialNumber: 'MC2024-006', inventoryCode: 'INV-EC-006', category: 'Diagnostica', classMdr: 'IIa', location: 'Ambulatorio Cardiologia', client: 'Clinica Humanitas', installDate: '2024-04-15', warrantyEnd: '2026-04-15', status: 'operative', healthScore: 91, serviceHours: 2100, mtbf: 3500, supplier: 'GE Healthcare Italia S.r.l.', listPrice: 5200, hasSerial: true, hasLot: false, softwareVersion: '2.6.1' },
+      { name: 'Centrifuga da Laboratorio', brand: 'Eppendorf', model: '5804 R', serialNumber: 'EP2024-007', inventoryCode: 'INV-CL-007', category: 'Laboratorio', classMdr: 'I', location: 'Laboratorio Analisi - Piano 0', client: 'Osp. San Raffaele', installDate: '2024-05-10', warrantyEnd: '2026-05-10', status: 'operative', healthScore: 97, serviceHours: 1200, mtbf: 5000, supplier: 'Eppendorf S.r.l.', listPrice: 12000, hasSerial: true, hasLot: false },
+      { name: 'Autoclave', brand: 'Tuttnauer', model: '3870EA', serialNumber: 'TT2024-008', inventoryCode: 'INV-AC-008', category: 'Altro', classMdr: 'IIa', location: 'Centrale Sterilizzazione', client: 'Osp. Niguarda', installDate: '2023-09-01', warrantyEnd: '2025-09-01', status: 'operative', healthScore: 82, serviceHours: 7800, mtbf: 2000, supplier: 'Tuttnauer Europe B.V.', listPrice: 18000, hasSerial: true, hasLot: false },
+      { name: 'Microscopio Chirurgico', brand: 'Zeiss', model: 'KINEVO 900', serialNumber: 'ZK2024-009', inventoryCode: 'INV-MC-009', category: 'Diagnostica', classMdr: 'I', location: 'Sala Operatoria 3 - Piano 2', client: 'Clinica Humanitas', installDate: '2024-07-01', warrantyEnd: '2026-07-01', status: 'standby', healthScore: 99, serviceHours: 400, mtbf: 8000, supplier: 'Carl Zeiss Meditec S.p.A.', listPrice: 250000, hasSerial: true, hasLot: false, softwareVersion: 'VR12' },
+      { name: 'Tavolo Operatorio', brand: 'Maquet', model: 'Magnus', serialNumber: 'MG2024-010', inventoryCode: 'INV-TO-010', category: 'Altro', classMdr: 'I', location: 'Sala Operatoria 1 - Piano 2', client: 'Osp. San Raffaele', installDate: '2023-06-15', warrantyEnd: '2025-06-15', status: 'operative', healthScore: 86, serviceHours: 5200, mtbf: 3000, supplier: 'Maquet Medical Italia S.r.l.', listPrice: 55000, hasSerial: true, hasLot: false },
+      { name: 'Tubo circuito respiratorio monouso', brand: 'Intersurgical', model: 'Flextube', serialNumber: null, inventoryCode: 'CON-TR-001', category: 'Altro', classMdr: 'I', location: 'Magazzino', client: null, status: 'operative', healthScore: 100, serviceHours: 0, supplier: 'Intersurgical S.p.A.', listPrice: 12, hasSerial: false, hasLot: true, expiryDate: '2027-06-30' },
+      { name: 'Elettrodi ECG monouso', brand: 'Ambu', model: 'BlueSensor L', serialNumber: null, inventoryCode: 'CON-EL-001', category: 'Diagnostica', classMdr: 'I', location: 'Magazzino', client: null, status: 'operative', healthScore: 100, serviceHours: 0, supplier: 'Ambu S.r.l.', listPrice: 0.35, hasSerial: false, hasLot: true, expiryDate: '2027-03-15' },
     ];
 
     const deviceIds = {};
     for (const d of devices) {
       const rows = await sql`
-        INSERT INTO devices (tenant_id, name, brand, model, serial_number, inventory_code, category, class_mdr, location, client, install_date, warranty_end, status, health_score, service_hours, mtbf)
-        VALUES (${TENANT_ID}, ${d.name}, ${d.brand}, ${d.model}, ${d.serialNumber}, ${d.inventoryCode}, ${d.category}, ${d.classMdr}, ${d.location}, ${d.client}, ${d.installDate}, ${d.warrantyEnd}, ${d.status}, ${d.healthScore}, ${d.serviceHours}, ${d.mtbf})
-        ON CONFLICT (serial_number) DO NOTHING
+        INSERT INTO devices (tenant_id, name, brand, model, serial_number, inventory_code, category, class_mdr, location, client, install_date, warranty_end, status, supplier, list_price, has_serial, has_lot, expiry_date, software_version, health_score, service_hours, mtbf)
+        VALUES (${TENANT_ID}, ${d.name}, ${d.brand || null}, ${d.model || null}, ${d.serialNumber || null}, ${d.inventoryCode}, ${d.category}, ${d.classMdr || null}, ${d.location || null}, ${d.client || null}, ${d.installDate || null}, ${d.warrantyEnd || null}, ${d.status}, ${d.supplier || null}, ${d.listPrice || null}, ${d.hasSerial !== undefined ? d.hasSerial : true}, ${d.hasLot || false}, ${d.expiryDate || null}, ${d.softwareVersion || null}, ${d.healthScore || 100}, ${d.serviceHours || 0}, ${d.mtbf || null})
+        ON CONFLICT (inventory_code) DO NOTHING
         RETURNING id, serial_number
       `;
       if (rows.length > 0) deviceIds[d.serialNumber] = rows[0].id;
@@ -134,11 +136,13 @@ export default async function handler(req, res) {
       await sql`
         INSERT INTO offers (tenant_id, number, client, amount, vat_rate, status, valid_until, description)
         VALUES (${TENANT_ID}, ${o.number}, ${o.client}, ${o.amount}, ${o.vatRate}, ${o.status}, ${o.validUntil}, ${o.description})
-        ON CONFLICT DO NOTHING
+        ON CONFLICT (number) DO NOTHING
       `;
     }
 
-    // --- 7. Seed Notifications ---
+    // --- 7. Seed Notifications (clear old seed notifications first) ---
+    await sql`DELETE FROM notifications WHERE tenant_id = ${TENANT_ID}`;
+
     const notifItems = [
       { title: 'Intervento INT-2403 in attesa', message: 'Defibrillatore Zoll — Pronto Soccorso Niguarda', notificationType: 'alert', severity: 'high', category: 'Interventi' },
       { title: 'Scorta bassa: Modulo SpO2', message: 'Quantita: 2 (minimo: 2)', notificationType: 'warning', severity: 'medium', category: 'Magazzino' },
@@ -164,7 +168,7 @@ export default async function handler(req, res) {
       await sql`
         INSERT INTO fleet (tenant_id, plate, model, tech_name, status, km_today, last_position)
         VALUES (${TENANT_ID}, ${f.plate}, ${f.model}, ${f.techName || null}, ${f.status}, ${f.kmToday}, ${f.lastPosition})
-        ON CONFLICT DO NOTHING
+        ON CONFLICT (plate) DO NOTHING
       `;
     }
 

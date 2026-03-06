@@ -25,6 +25,8 @@ const EMPTY_FORM = {
   name: '', brand: '', model: '', serialNumber: '', inventoryCode: '',
   category: 'Diagnostica', classMDR: 'IIa', location: '', client: '',
   installDate: '', warrantyEnd: '', status: 'operative', parentId: '',
+  supplier: '', listPrice: '', hasSerial: true, hasLot: false,
+  expiryDate: '', softwareVersion: '',
   notes: '', healthScore: 100, serviceHours: 0, mtbf: 0,
 }
 
@@ -88,7 +90,7 @@ export default function DeviceRegistryModule() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return devices.filter(d => {
-      if (q && ![d.name, d.brand, d.model, d.serialNumber, d.inventoryCode, d.location, d.client]
+      if (q && ![d.name, d.brand, d.model, d.serialNumber, d.inventoryCode, d.location, d.client, d.supplier]
         .some(f => f?.toLowerCase().includes(q))) return false
       if (filterCategory && d.category !== filterCategory) return false
       if (filterStatus && d.status !== filterStatus) return false
@@ -129,6 +131,10 @@ export default function DeviceRegistryModule() {
       installDate: device.installDate ? device.installDate.slice(0, 10) : '',
       warrantyEnd: device.warrantyEnd ? device.warrantyEnd.slice(0, 10) : '',
       status: device.status || 'operative', parentId: device.parentId || '',
+      supplier: device.supplier || '', listPrice: device.listPrice ?? '',
+      hasSerial: device.hasSerial !== false, hasLot: device.hasLot || false,
+      expiryDate: device.expiryDate ? device.expiryDate.slice(0, 10) : '',
+      softwareVersion: device.softwareVersion || '',
       notes: device.notes || '', healthScore: device.healthScore ?? 100,
       serviceHours: device.serviceHours ?? 0, mtbf: device.mtbf ?? 0,
     })
@@ -140,10 +146,13 @@ export default function DeviceRegistryModule() {
       ...form,
       installDate: form.installDate ? new Date(form.installDate).toISOString() : null,
       warrantyEnd: form.warrantyEnd ? new Date(form.warrantyEnd).toISOString() : null,
+      expiryDate: form.expiryDate ? new Date(form.expiryDate).toISOString() : null,
       parentId: form.parentId || null,
+      listPrice: form.listPrice !== '' ? Number(form.listPrice) : null,
       healthScore: Number(form.healthScore),
       serviceHours: Number(form.serviceHours),
       mtbf: Number(form.mtbf),
+      serialNumber: form.hasSerial ? form.serialNumber : null,
     }
     if (editDevice) {
       updateDevice(editDevice.id, payload)
@@ -169,9 +178,9 @@ export default function DeviceRegistryModule() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <SectionHeader title="Anagrafica Dispositivi" subtitle="Registro master dispositivi medici — MDR 2017/745">
+      <SectionHeader title="Anagrafica Prodotti" subtitle="Registro master prodotti e dispositivi medici — MDR 2017/745">
         <button onClick={openNewForm} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
-          <Plus size={16} /> Nuovo Dispositivo
+          <Plus size={16} /> Nuovo Prodotto
         </button>
         <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
           <button onClick={() => setViewMode('table')} className={`p-1.5 rounded ${viewMode === 'table' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}><List size={16} /></button>
@@ -180,7 +189,7 @@ export default function DeviceRegistryModule() {
       </SectionHeader>
 
       {/* Search + Filters */}
-      <SearchBar value={search} onChange={setSearch} placeholder="Cerca nome, marca, modello, seriale, codice inventario, ubicazione, cliente..." className="w-full" />
+      <SearchBar value={search} onChange={setSearch} placeholder="Cerca nome, marca, modello, seriale, codice prodotto, fornitore, ubicazione, cliente..." className="w-full" />
 
       <div className="flex flex-wrap items-center gap-3">
         <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
@@ -195,7 +204,7 @@ export default function DeviceRegistryModule() {
           <option value="">Tutti i Clienti</option>
           {uniqueClients.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-        <span className="ml-auto text-xs text-gray-400">{filtered.length} dispositivi</span>
+        <span className="ml-auto text-xs text-gray-400">{filtered.length} prodotti</span>
       </div>
 
       {/* Table View */}
@@ -205,13 +214,13 @@ export default function DeviceRegistryModule() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100">
-                  <th className="px-4 py-3">Codice Inv.</th>
-                  <th className="px-4 py-3">Nome</th>
-                  <th className="px-4 py-3">Brand / Modello</th>
+                  <th className="px-4 py-3">Cod. Prodotto</th>
+                  <th className="px-4 py-3">Descrizione</th>
+                  <th className="px-4 py-3">Fornitore</th>
+                  <th className="px-4 py-3">Modello</th>
+                  <th className="px-4 py-3">Prezzo Listino</th>
                   <th className="px-4 py-3">S/N</th>
                   <th className="px-4 py-3">Categoria</th>
-                  <th className="px-4 py-3">Classe MDR</th>
-                  <th className="px-4 py-3">Ubicazione</th>
                   <th className="px-4 py-3">Cliente</th>
                   <th className="px-4 py-3 w-28">Health</th>
                   <th className="px-4 py-3">Stato</th>
@@ -227,13 +236,11 @@ export default function DeviceRegistryModule() {
                   >
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">{d.inventoryCode}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{d.name}</td>
-                    <td className="px-4 py-3 text-gray-600">{d.brand} {d.model}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500">{d.serialNumber}</td>
-                    <td className="px-4 py-3 text-gray-600">{d.category}</td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-indigo-50 text-indigo-700">{d.classMDR}</span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs max-w-[160px] truncate">{d.location}</td>
+                    <td className="px-4 py-3 text-gray-600 text-xs max-w-[160px] truncate">{d.supplier}</td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">{d.brand} {d.model}</td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">{d.listPrice != null ? `${Number(d.listPrice).toLocaleString('it-IT', { minimumFractionDigits: 2 })} €` : '-'}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-500">{d.serialNumber || '-'}</td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">{d.category}</td>
                     <td className="px-4 py-3 text-gray-600 text-xs">{d.client}</td>
                     <td className="px-4 py-3"><HealthBar score={d.healthScore} height="h-1.5" /></td>
                     <td className="px-4 py-3"><StatusChip status={d.status} /></td>
@@ -272,29 +279,68 @@ export default function DeviceRegistryModule() {
       {/* ================================================================= */}
       {/* DeviceFormModal                                                     */}
       {/* ================================================================= */}
-      <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={editDevice ? 'Modifica Dispositivo' : 'Nuovo Dispositivo'} subtitle="Compila tutti i campi obbligatori" maxWidth="max-w-2xl">
+      <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={editDevice ? 'Modifica Prodotto' : 'Nuovo Prodotto'} subtitle="Compila i campi del prodotto" maxWidth="max-w-2xl">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Name */}
-          <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
+          {/* Sezione: Dati prodotto */}
+          <div className="sm:col-span-2 text-xs font-semibold text-gray-400 uppercase tracking-wide pt-1">Dati Prodotto</div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Cod. Prodotto *</label>
+            <input value={form.inventoryCode} onChange={e => setField('inventoryCode', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="es. G5A10A" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Descrizione *</label>
             <input value={form.name} onChange={e => setField('name', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Brand</label>
-            <input value={form.brand} onChange={e => setField('brand', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Fornitore</label>
+            <input value={form.supplier} onChange={e => setField('supplier', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="es. ZOLL Medical Italia S.r.l." />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Modello</label>
             <input value={form.model} onChange={e => setField('model', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Serial Number *</label>
-            <input value={form.serialNumber} onChange={e => setField('serialNumber', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Brand</label>
+            <input value={form.brand} onChange={e => setField('brand', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Codice Inventario</label>
-            <input value={form.inventoryCode} onChange={e => setField('inventoryCode', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Prezzo di Listino (€)</label>
+            <input type="number" step="0.01" min="0" value={form.listPrice} onChange={e => setField('listPrice', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="0.00" />
           </div>
+
+          {/* Sezione: Tracciabilità */}
+          <div className="sm:col-span-2 text-xs font-semibold text-gray-400 uppercase tracking-wide pt-3 border-t border-gray-100 mt-1">Tracciabilità</div>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={form.hasSerial} onChange={e => setField('hasSerial', e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-300" />
+              <span className="text-sm text-gray-700">Articolo con seriale</span>
+            </label>
+          </div>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={form.hasLot} onChange={e => setField('hasLot', e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-300" />
+              <span className="text-sm text-gray-700">Articolo con lotto</span>
+            </label>
+          </div>
+          {form.hasSerial && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Serial Number</label>
+              <input value={form.serialNumber} onChange={e => setField('serialNumber', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+          )}
+          {form.hasSerial && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Versione Software</label>
+              <input value={form.softwareVersion} onChange={e => setField('softwareVersion', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+          )}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Scadenza</label>
+            <input type="date" value={form.expiryDate} onChange={e => setField('expiryDate', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+
+          {/* Sezione: Classificazione e ubicazione */}
+          <div className="sm:col-span-2 text-xs font-semibold text-gray-400 uppercase tracking-wide pt-3 border-t border-gray-100 mt-1">Classificazione & Ubicazione</div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Categoria</label>
             <select value={form.category} onChange={e => setField('category', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
@@ -330,11 +376,11 @@ export default function DeviceRegistryModule() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Dispositivo Padre (opzionale)</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Prodotto Madre (opzionale)</label>
             <select value={form.parentId} onChange={e => setField('parentId', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
-              <option value="">Nessuno (root)</option>
+              <option value="">Nessuno (autonomo)</option>
               {devices.filter(d => d.id !== editDevice?.id).map(d => (
-                <option key={d.id} value={d.id}>{d.name} ({d.serialNumber})</option>
+                <option key={d.id} value={d.id}>{d.name} ({d.inventoryCode || d.serialNumber})</option>
               ))}
             </select>
           </div>
@@ -345,7 +391,7 @@ export default function DeviceRegistryModule() {
         </div>
         <div className="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-gray-100">
           <button onClick={() => setFormOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Annulla</button>
-          <button onClick={handleSave} disabled={!form.name || !form.serialNumber} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <button onClick={handleSave} disabled={!form.name || !form.inventoryCode} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <Save size={14} /> {editDevice ? 'Aggiorna' : 'Salva'}
           </button>
         </div>
@@ -370,11 +416,24 @@ export default function DeviceRegistryModule() {
 
             {/* Info grid */}
             <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-              <div><span className="text-gray-400 text-xs">Serial Number</span><p className="font-mono font-medium text-gray-800">{detailDevice.serialNumber}</p></div>
-              <div><span className="text-gray-400 text-xs">Codice Inventario</span><p className="font-mono font-medium text-gray-800">{detailDevice.inventoryCode}</p></div>
+              <div><span className="text-gray-400 text-xs">Cod. Prodotto</span><p className="font-mono font-medium text-gray-800">{detailDevice.inventoryCode || '-'}</p></div>
+              <div><span className="text-gray-400 text-xs">Fornitore</span><p className="text-gray-700">{detailDevice.supplier || '-'}</p></div>
+              <div><span className="text-gray-400 text-xs">Prezzo di Listino</span><p className="text-gray-700">{detailDevice.listPrice != null ? `${Number(detailDevice.listPrice).toLocaleString('it-IT', { minimumFractionDigits: 2 })} €` : '-'}</p></div>
               <div><span className="text-gray-400 text-xs">Categoria</span><p className="text-gray-700">{detailDevice.category}</p></div>
-              <div><span className="text-gray-400 text-xs">Ubicazione</span><p className="text-gray-700">{detailDevice.location}</p></div>
-              <div><span className="text-gray-400 text-xs">Cliente</span><p className="text-gray-700">{detailDevice.client}</p></div>
+              {detailDevice.hasSerial !== false && (
+                <div><span className="text-gray-400 text-xs">Serial Number</span><p className="font-mono font-medium text-gray-800">{detailDevice.serialNumber || '-'}</p></div>
+              )}
+              {detailDevice.hasSerial !== false && detailDevice.softwareVersion && (
+                <div><span className="text-gray-400 text-xs">Versione Software</span><p className="text-gray-700">{detailDevice.softwareVersion}</p></div>
+              )}
+              {detailDevice.hasLot && (
+                <div><span className="text-gray-400 text-xs">Tracciato per Lotto</span><p className="text-gray-700">Sì</p></div>
+              )}
+              {detailDevice.expiryDate && (
+                <div><span className="text-gray-400 text-xs">Scadenza</span><p className="text-gray-700">{new Date(detailDevice.expiryDate).toLocaleDateString('it-IT')}</p></div>
+              )}
+              <div><span className="text-gray-400 text-xs">Ubicazione</span><p className="text-gray-700">{detailDevice.location || '-'}</p></div>
+              <div><span className="text-gray-400 text-xs">Cliente</span><p className="text-gray-700">{detailDevice.client || '-'}</p></div>
               <div><span className="text-gray-400 text-xs">Data Installazione</span><p className="text-gray-700">{detailDevice.installDate ? new Date(detailDevice.installDate).toLocaleDateString('it-IT') : '-'}</p></div>
               <div><span className="text-gray-400 text-xs">Fine Garanzia</span><p className="text-gray-700">{detailDevice.warrantyEnd ? new Date(detailDevice.warrantyEnd).toLocaleDateString('it-IT') : '-'}</p></div>
               <div><span className="text-gray-400 text-xs">Ore Servizio</span><p className="text-gray-700">{detailDevice.serviceHours?.toLocaleString('it-IT') ?? '-'} h</p></div>
