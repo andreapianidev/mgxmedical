@@ -22,5 +22,19 @@ export default async function handler(req, res) {
     }
   }
 
-  return methodNotAllowed(res, 'GET');
+  if (req.method === 'POST') {
+    const b = req.body || {};
+    try {
+      const rows = await sql`
+        INSERT INTO equipment (tenant_id, code, name, category, status, assigned_to, calibration_due)
+        VALUES (${user.tenantId}, ${b.code}, ${b.name}, ${b.category || null}, ${b.status || 'available'}, ${b.assignedTo || null}, ${b.calibrationDue || null})
+        RETURNING *
+      `;
+      return res.status(201).json(toCamel(rows[0]));
+    } catch (err) {
+      return handleError(res, err);
+    }
+  }
+
+  return methodNotAllowed(res, 'GET, POST');
 }

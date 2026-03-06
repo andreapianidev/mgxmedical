@@ -46,6 +46,18 @@ export default async function handler(req, res) {
           description = COALESCE(${b.description ?? null}, description),
           health_pre = COALESCE(${b.healthPre ?? null}, health_pre),
           notes = COALESCE(${b.notes ?? null}, notes),
+          address = COALESCE(${b.address ?? null}, address),
+          city = COALESCE(${b.city ?? null}, city),
+          order_number = COALESCE(${b.orderNumber ?? null}, order_number),
+          order_date = COALESCE(${b.orderDate ?? null}, order_date),
+          request_channel = COALESCE(${b.requestChannel ?? null}, request_channel),
+          request_reference = COALESCE(${b.requestReference ?? null}, request_reference),
+          device_software_version = COALESCE(${b.deviceSoftwareVersion ?? null}, device_software_version),
+          warranty_status = COALESCE(${b.warrantyStatus ?? null}, warranty_status),
+          warranty_expiry = COALESCE(${b.warrantyExpiry ?? null}, warranty_expiry),
+          fault_type = COALESCE(${b.faultType ?? null}, fault_type),
+          work_performed = COALESCE(${b.workPerformed ?? null}, work_performed),
+          root_cause = COALESCE(${b.rootCause ?? null}, root_cause),
           acknowledged_at = COALESCE(${b.acknowledgedAt ?? null}, acknowledged_at),
           started_at = COALESCE(${b.startedAt ?? null}, started_at)
         WHERE id = ${id}::uuid AND tenant_id = ${user.tenantId}

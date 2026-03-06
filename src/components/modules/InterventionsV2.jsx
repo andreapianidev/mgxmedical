@@ -1,7 +1,6 @@
 import { useState, useMemo, lazy, Suspense } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
 import { useToast } from '../../contexts/ToastContext'
-import { DEMO_USERS } from '../../data/demoData'
 import {
   INTERVENTION_TYPES,
   REQUEST_CHANNELS,
@@ -112,7 +111,7 @@ function WizardProgressBar({ currentStep }) {
 // Main Component
 // ===========================================================================
 export default function InterventionsV2() {
-  const { interventions, warehouse, addIntervention, closeIntervention } = useGlobalStore()
+  const { interventions, warehouse, users, addIntervention, closeIntervention } = useGlobalStore()
   const { addToast } = useToast()
 
   // ---- List state ----
@@ -134,7 +133,7 @@ export default function InterventionsV2() {
   const [createdCode, setCreatedCode] = useState('')
 
   // ---------- Derived data ----------
-  const techUsers = useMemo(() => DEMO_USERS.filter(u => u.role === 'technician'), [])
+  const techUsers = useMemo(() => users.filter(u => u.role === 'technician'), [users])
 
   const uniqueTechs = useMemo(() => {
     const names = [...new Set(interventions.map(i => i.techName).filter(Boolean))]
@@ -190,10 +189,10 @@ export default function InterventionsV2() {
     )
   }
 
-  const handleCreateIntervention = () => {
+  const handleCreateIntervention = async () => {
     const code = generateCode()
     const techNames = selectedTechs
-      .map(id => DEMO_USERS.find(u => u.id === id)?.name)
+      .map(id => users.find(u => u.id === id)?.name)
       .filter(Boolean)
       .join(', ')
 
@@ -230,10 +229,14 @@ export default function InterventionsV2() {
       warrantyExpiry: form.warrantyExpiry,
     }
 
-    addIntervention(newInt).catch(() => addToast('error', 'Errore nel salvataggio'))
-    setCreatedCode(code)
-    setWizardStep(4)
-    addToast('success', `Intervento ${code} creato con successo`)
+    try {
+      await addIntervention(newInt)
+      setCreatedCode(code)
+      setWizardStep(4)
+      addToast('success', `Intervento ${code} creato con successo`)
+    } catch {
+      addToast('error', 'Errore nel salvataggio')
+    }
   }
 
   // ---------- Email / WhatsApp helpers ----------
@@ -267,21 +270,27 @@ export default function InterventionsV2() {
   // ---------- Handlers: Close Intervention ----------
   const handleCloseIntervention = async (closeData) => {
     if (!showCloseModal) return
-    closeIntervention(showCloseModal.id, closeData).catch(() => addToast('error', 'Errore nella chiusura'))
-    addToast('success', `Intervento ${showCloseModal.code} chiuso — Esito: ${closeData.outcome}`)
-    setShowCloseModal(null)
+    try {
+      await closeIntervention(showCloseModal.id, closeData)
+      addToast('success', `Intervento ${showCloseModal.code} chiuso — Esito: ${closeData.outcome}`)
+      setShowCloseModal(null)
+    } catch {
+      addToast('error', 'Errore nella chiusura')
+    }
   }
 
   const handleCloseAndPdf = async (closeData) => {
     if (!showCloseModal) return
     const intv = showCloseModal
-    await closeIntervention(intv.id, closeData).catch(() => addToast('error', 'Errore nella chiusura'))
-    addToast('success', `Intervento ${intv.code} chiuso — Esito: ${closeData.outcome}`)
-    setShowCloseModal(null)
-
-    // Generate PDF for the closed intervention
-    const mergedIntv = { ...intv, status: 'completed', closedAt: new Date().toISOString(), ...closeData }
-    await generatePdf(mergedIntv)
+    try {
+      await closeIntervention(intv.id, closeData)
+      addToast('success', `Intervento ${intv.code} chiuso — Esito: ${closeData.outcome}`)
+      setShowCloseModal(null)
+      const mergedIntv = { ...intv, status: 'completed', closedAt: new Date().toISOString(), ...closeData }
+      await generatePdf(mergedIntv)
+    } catch {
+      addToast('error', 'Errore nella chiusura')
+    }
   }
 
   // ---------- PDF Generation ----------
@@ -787,7 +796,7 @@ export default function InterventionsV2() {
                 <span className="text-gray-500">Tecnici:</span>
                 <span className="text-gray-700">
                   {selectedTechs.length > 0
-                    ? selectedTechs.map(id => DEMO_USERS.find(u => u.id === id)?.name).join(', ')
+                    ? selectedTechs.map(id => users.find(u => u.id === id)?.name).join(', ')
                     : 'Nessuno'}
                 </span>
               </div>

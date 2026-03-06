@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+import { getSQL } from '../../_lib/db.js';
 import { requireAuth } from '../../_lib/auth.js';
 import { handleError, methodNotAllowed } from '../../_lib/errors.js';
 import { toCamel } from '../../_lib/caseTransform.js';
@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   const { id } = req.query;
   const b = req.body || {};
 
-  const sql = neon(process.env.DATABASE_URL);
+  const sql = getSQL();
 
   try {
     // Build transaction queries

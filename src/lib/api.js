@@ -31,7 +31,7 @@ async function request(path, options = {}) {
     throw new ApiError(res.status, data.error || 'Errore di rete');
   }
 
-  if (res.status === 204) return null;
+  if (res.status === 204 || res.headers.get('content-length') === '0') return null;
   return res.json();
 }
 

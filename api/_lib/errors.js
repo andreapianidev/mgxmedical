@@ -6,6 +6,9 @@ export function handleError(res, error) {
   if (error.code === '23503') {
     return res.status(400).json({ error: 'Riferimento non valido' });
   }
+  if (error.code === '22P02') {
+    return res.status(400).json({ error: 'ID non valido' });
+  }
   return res.status(500).json({ error: 'Errore interno del server' });
 }
 

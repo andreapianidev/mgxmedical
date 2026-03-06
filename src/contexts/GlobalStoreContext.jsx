@@ -17,6 +17,7 @@ export function GlobalStoreProvider({ children }) {
   const [fleet, setFleet] = useState([])
   const [attachments, setAttachments] = useState([])
   const [activityLog, setActivityLog] = useState([])
+  const [users, setUsers] = useState([])
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -24,6 +25,14 @@ export function GlobalStoreProvider({ children }) {
   // Keep refs for closures that need current state
   const interventionsRef = useRef(interventions)
   useEffect(() => { interventionsRef.current = interventions }, [interventions])
+  const devicesRef = useRef(devices)
+  useEffect(() => { devicesRef.current = devices }, [devices])
+  const warehouseRef = useRef(warehouse)
+  useEffect(() => { warehouseRef.current = warehouse }, [warehouse])
+  const calEventsRef = useRef(calEvents)
+  useEffect(() => { calEventsRef.current = calEvents }, [calEvents])
+  const notificationsRef = useRef(notifications)
+  useEffect(() => { notificationsRef.current = notifications }, [notifications])
 
   // --- Initial data fetch ---
   useEffect(() => {
@@ -51,6 +60,10 @@ export function GlobalStoreProvider({ children }) {
           api.get('/activity-log'),
         ])
 
+        // Fetch users separately (non-blocking if it fails)
+        let usersData = []
+        try { usersData = await api.get('/users') } catch {}
+
         if (cancelled) return
         setDevices(devData)
         setInterventions(intData)
@@ -65,6 +78,7 @@ export function GlobalStoreProvider({ children }) {
         setFleet(fleetData)
         setAttachments(attData)
         setActivityLog(logData)
+        setUsers(usersData)
         setLoading(false)
       } catch (err) {
         if (!cancelled) {
@@ -120,10 +134,10 @@ export function GlobalStoreProvider({ children }) {
 
   const closeIntervention = useCallback(async (id, closeData) => {
     const prevInterventions = interventionsRef.current
-    const prevDevices = [...devices]
-    const prevWarehouse = [...warehouse]
+    const prevDevices = [...devicesRef.current]
+    const prevWarehouse = [...warehouseRef.current]
 
-    // Optimistic updates (mirror current logic)
+    // Optimistic updates
     setInterventions(p => p.map(i =>
       i.id === id ? { ...i, status: 'completed', closedAt: new Date().toISOString(), ...closeData } : i
     ))
@@ -167,7 +181,7 @@ export function GlobalStoreProvider({ children }) {
       setWarehouse(prevWarehouse)
       throw err
     }
-  }, [devices, warehouse])
+  }, [])
 
   // --- Devices CRUD ---
   const addDevice = useCallback(async (device) => {
@@ -362,7 +376,7 @@ export function GlobalStoreProvider({ children }) {
   }, [])
 
   const deleteCalEvent = useCallback(async (id) => {
-    const prev = calEvents
+    const prev = calEventsRef.current
     setCalEvents(p => p.filter(e => e.id !== id))
     try {
       await api.delete(`/calendar/${id}`)
@@ -370,7 +384,7 @@ export function GlobalStoreProvider({ children }) {
       setCalEvents(prev)
       throw err
     }
-  }, [calEvents])
+  }, [])
 
   // --- Shifts CRUD ---
   const addShift = useCallback(async (shift) => {
@@ -423,23 +437,23 @@ export function GlobalStoreProvider({ children }) {
   }, [])
 
   const toggleNotificationPin = useCallback(async (id) => {
-    const notif = notifications.find(n => n.id === id)
+    const notif = notificationsRef.current.find(n => n.id === id)
     const newPinned = !notif?.isPinned
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isPinned: newPinned } : n))
     try {
       await api.put(`/notifications/${id}`, { isPinned: newPinned })
     } catch {}
-  }, [notifications])
+  }, [])
 
   const deleteNotification = useCallback(async (id) => {
-    const prev = notifications
+    const prev = notificationsRef.current
     setNotifications(p => p.filter(n => n.id !== id))
     try {
       await api.delete(`/notifications/${id}`)
     } catch (err) {
       setNotifications(prev)
     }
-  }, [notifications])
+  }, [])
 
   // --- Equipment CRUD ---
   const updateEquipment = useCallback(async (id, updates) => {
@@ -477,7 +491,9 @@ export function GlobalStoreProvider({ children }) {
     try {
       const created = await api.post('/activity-log', entry)
       setActivityLog(prev => prev.map(l => l.id === tempId ? created : l))
-    } catch {}
+    } catch {
+      setActivityLog(prev => prev.filter(l => l.id !== tempId))
+    }
   }, [])
 
   // Unread notifications count
@@ -487,7 +503,7 @@ export function GlobalStoreProvider({ children }) {
     // Data
     devices, interventions, warehouse, contracts, offers,
     schedMaint, calEvents, shifts, notifications, equipment,
-    fleet, attachments, activityLog, unreadCount,
+    fleet, attachments, activityLog, users, unreadCount,
     // Loading state
     loading, error,
     // Interventions
