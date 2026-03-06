@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
+import { useToast } from '../../contexts/ToastContext'
 import { DEMO_USERS } from '../../data/demoData'
 import SectionHeader from '../shared/SectionHeader'
 import KpiCard from '../shared/KpiCard'
 import StatusChip from '../shared/StatusChip'
 import Modal from '../shared/Modal'
 import PriorityPill from '../shared/PriorityPill'
-import { Truck, MapPin, TrendingUp, Navigation, User, Phone, ExternalLink } from 'lucide-react'
+import { Truck, MapPin, TrendingUp, Navigation, User, Phone, ExternalLink, Trash2 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Technician status configuration
@@ -33,10 +34,12 @@ function deriveTechStatus(techName, interventions) {
 }
 
 export default function FleetModule() {
-  const { fleet, interventions } = useGlobalStore()
+  const { fleet, interventions, deleteFleet } = useGlobalStore()
+  const { addToast } = useToast()
 
   // --- Navigation modal state ---
   const [navModal, setNavModal] = useState({ open: false, tech: null, intervention: null })
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   // --- Build technician list from DEMO_USERS + fleet ---
   const technicians = useMemo(() => {
@@ -95,6 +98,17 @@ export default function FleetModule() {
   const vehicleStatusColor = (status) => {
     const map = { active: '#22C55E', parked: '#94A3B8', maintenance: '#EAB308' }
     return map[status] || '#94A3B8'
+  }
+
+  const handleDeleteVehicle = async () => {
+    if (!deleteTarget) return
+    try {
+      await deleteFleet(deleteTarget.id)
+      addToast('success', 'Veicolo eliminato con successo')
+    } catch {
+      addToast('error', 'Errore nell\'eliminazione del veicolo')
+    }
+    setDeleteTarget(null)
   }
 
   return (
@@ -221,19 +235,28 @@ export default function FleetModule() {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-bold text-gray-800">{v.plate}</span>
-                <span
-                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium"
-                  style={{
-                    backgroundColor: vehicleStatusColor(v.status) + '18',
-                    color: vehicleStatusColor(v.status),
-                  }}
-                >
+                <div className="flex items-center gap-2">
                   <span
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: vehicleStatusColor(v.status) }}
-                  />
-                  {vehicleStatusLabel(v.status)}
-                </span>
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium"
+                    style={{
+                      backgroundColor: vehicleStatusColor(v.status) + '18',
+                      color: vehicleStatusColor(v.status),
+                    }}
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: vehicleStatusColor(v.status) }}
+                    />
+                    {vehicleStatusLabel(v.status)}
+                  </span>
+                  <button
+                    onClick={() => setDeleteTarget(v)}
+                    className="p-1 rounded hover:bg-red-50 transition-colors"
+                    title="Elimina veicolo"
+                  >
+                    <Trash2 size={13} className="text-gray-400 hover:text-red-500" />
+                  </button>
+                </div>
               </div>
               <p className="text-xs text-gray-500 mb-2">{v.model}</p>
               <div className="flex items-center justify-between text-xs text-gray-500">
@@ -313,6 +336,23 @@ export default function FleetModule() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Delete Vehicle Confirmation Modal */}
+      <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Conferma eliminazione" maxWidth="max-w-md">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Sei sicuro di voler eliminare il veicolo <strong>{deleteTarget?.plate}</strong> ({deleteTarget?.model})?
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              Annulla
+            </button>
+            <button onClick={handleDeleteVehicle} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
+              Elimina
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

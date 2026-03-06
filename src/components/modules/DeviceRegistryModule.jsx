@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
+import { useToast } from '../../contexts/ToastContext'
 import SectionHeader from '../shared/SectionHeader'
 import SearchBar from '../shared/SearchBar'
 import StatusChip from '../shared/StatusChip'
@@ -8,7 +9,7 @@ import Modal from '../shared/Modal'
 import EmptyState from '../shared/EmptyState'
 import PriorityPill from '../shared/PriorityPill'
 import {
-  Database, Plus, List, GitBranch, Edit, Eye,
+  Database, Plus, List, GitBranch, Edit, Eye, Trash2,
   ChevronRight, ChevronDown, X, Save
 } from 'lucide-react'
 
@@ -70,8 +71,9 @@ function DeviceTreeNode({ device, children, level = 0, onSelect }) {
 // ---------------------------------------------------------------------------
 export default function DeviceRegistryModule() {
   const {
-    devices, interventions, addDevice, updateDevice,
+    devices, interventions, addDevice, updateDevice, deleteDevice,
   } = useGlobalStore()
+  const { addToast } = useToast()
 
   const [search, setSearch] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
@@ -82,6 +84,7 @@ export default function DeviceRegistryModule() {
   const [editDevice, setEditDevice] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [detailDevice, setDetailDevice] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   // Unique clients for filter dropdown
   const uniqueClients = useMemo(() => [...new Set(devices.map(d => d.client).filter(Boolean))].sort(), [devices])
@@ -160,6 +163,17 @@ export default function DeviceRegistryModule() {
       addDevice(payload)
     }
     setFormOpen(false)
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    try {
+      await deleteDevice(deleteTarget.id)
+      addToast('success', `Prodotto "${deleteTarget.name}" eliminato.`)
+    } catch (err) {
+      addToast('error', err.message || 'Errore durante l\'eliminazione.')
+    }
+    setDeleteTarget(null)
   }
 
   const setField = (key, val) => setForm(prev => ({ ...prev, [key]: val }))
@@ -245,13 +259,22 @@ export default function DeviceRegistryModule() {
                     <td className="px-4 py-3"><HealthBar score={d.healthScore} height="h-1.5" /></td>
                     <td className="px-4 py-3"><StatusChip status={d.status} /></td>
                     <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setDetailDevice(d) }}
-                        className="p-1.5 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
-                        title="Dettaglio"
-                      >
-                        <Eye size={16} />
-                      </button>
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDetailDevice(d) }}
+                          className="p-1.5 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
+                          title="Dettaglio"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeleteTarget(d) }}
+                          className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-gray-400 hover:text-red-500"
+                          title="Elimina"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -409,9 +432,14 @@ export default function DeviceRegistryModule() {
                 <StatusChip status={detailDevice.status} />
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-indigo-50 text-indigo-700">Classe {detailDevice.classMDR}</span>
               </div>
-              <button onClick={() => { setDetailDevice(null); openEditForm(detailDevice) }} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                <Edit size={13} /> Modifica
-              </button>
+              <div className="flex items-center gap-1">
+                <button onClick={() => { setDetailDevice(null); openEditForm(detailDevice) }} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                  <Edit size={13} /> Modifica
+                </button>
+                <button onClick={() => { setDetailDevice(null); setDeleteTarget(detailDevice) }} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                  <Trash2 size={13} /> Elimina
+                </button>
+              </div>
             </div>
 
             {/* Info grid */}
@@ -486,6 +514,17 @@ export default function DeviceRegistryModule() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Delete Confirmation */}
+      <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Conferma eliminazione" maxWidth="max-w-sm">
+        <p className="text-sm text-gray-600">
+          Sei sicuro di voler eliminare il prodotto <strong>{deleteTarget?.name}</strong>? Questa azione non può essere annullata.
+        </p>
+        <div className="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-gray-100">
+          <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Annulla</button>
+          <button onClick={handleDelete} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">Elimina</button>
+        </div>
       </Modal>
     </div>
   )

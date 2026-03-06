@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
+import { useToast } from '../../contexts/ToastContext'
 import { formatCurrency } from '../../lib/utils'
 import SectionHeader from '../shared/SectionHeader'
 import KpiCard from '../shared/KpiCard'
@@ -49,6 +50,7 @@ function StarRating({ value }) {
 // ===========================================================================
 export default function ReportsModule() {
   const { interventions, offers, contracts } = useGlobalStore()
+  const { addToast } = useToast()
 
   const [period, setPeriod] = useState('year')
   const [sortCol, setSortCol] = useState(null)
@@ -168,7 +170,7 @@ export default function ReportsModule() {
     ).join('\n')
     const csv = header + rows
     navigator.clipboard.writeText(csv)
-    alert('CSV copiato negli appunti!')
+    addToast('success', 'CSV copiato negli appunti!')
   }
 
   // ---------- Sort indicator ----------

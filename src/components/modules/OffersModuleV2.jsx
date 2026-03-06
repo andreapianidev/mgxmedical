@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
+import { useToast } from '../../contexts/ToastContext'
 import { formatCurrency, formatDate, generateId } from '../../lib/utils'
 import SectionHeader from '../shared/SectionHeader'
 import SearchBar from '../shared/SearchBar'
@@ -9,7 +10,7 @@ import Modal from '../shared/Modal'
 import EmptyState from '../shared/EmptyState'
 import {
   FileText, Plus, Send, CheckCircle2,
-  AlertTriangle, Mail, Eye, DollarSign, XCircle,
+  AlertTriangle, Mail, Eye, DollarSign, XCircle, Trash2,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -43,7 +44,8 @@ function getEffectiveStatus(offer) {
 // Main Component
 // ===========================================================================
 export default function OffersModuleV2() {
-  const { offers, addOffer, updateOffer, acceptOffer, declineOffer, interventions } = useGlobalStore()
+  const { offers, addOffer, updateOffer, acceptOffer, declineOffer, deleteOffer, interventions } = useGlobalStore()
+  const { addToast } = useToast()
 
   const [search, setSearch] = useState('')
   const [statusTab, setStatusTab] = useState('all')
@@ -51,6 +53,7 @@ export default function OffersModuleV2() {
   // Modal states
   const [showNewModal, setShowNewModal] = useState(false)
   const [detailOffer, setDetailOffer] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   // New offer form
   const [newForm, setNewForm] = useState({
@@ -148,6 +151,18 @@ export default function OffersModuleV2() {
     declineOffer(offer.id)
   }
 
+  // ---------- Handlers: Delete offer ----------
+  const handleDeleteOffer = async () => {
+    if (!deleteTarget) return
+    try {
+      await deleteOffer(deleteTarget.id)
+      addToast('success', `Offerta ${deleteTarget.number} eliminata.`)
+    } catch (err) {
+      addToast('error', err.message || 'Errore durante l\'eliminazione.')
+    }
+    setDeleteTarget(null)
+  }
+
   // ---------- Handlers: New offer ----------
   const openNewModal = () => {
     setNewForm({ client: '', amount: '', validUntil: '', description: '', notes: '', interventionId: '' })
@@ -155,7 +170,10 @@ export default function OffersModuleV2() {
   }
 
   const handleCreateOffer = () => {
-    if (!newForm.client || !newForm.amount) return
+    if (!newForm.client || !newForm.amount) {
+      addToast('error', 'Cliente e importo sono obbligatori.')
+      return
+    }
 
     const number = `OFF-${new Date().getFullYear()}/${String(offers.length + 1).padStart(3, '0')}`
     addOffer({
@@ -280,6 +298,15 @@ export default function OffersModuleV2() {
                               Invia
                             </button>
                           )}
+
+                          {/* Delete button */}
+                          <button
+                            onClick={() => setDeleteTarget(offer)}
+                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Elimina"
+                          >
+                            <Trash2 size={15} />
+                          </button>
 
                           {/* Sent: Accept / Decline */}
                           {offer.effectiveStatus === 'sent' && (
@@ -548,6 +575,17 @@ export default function OffersModuleV2() {
             </div>
           )
         })()}
+      </Modal>
+
+      {/* Delete Confirmation */}
+      <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Conferma eliminazione" maxWidth="max-w-sm">
+        <p className="text-sm text-gray-600">
+          Sei sicuro di voler eliminare l'offerta <strong>{deleteTarget?.number}</strong>? Questa azione non può essere annullata.
+        </p>
+        <div className="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-gray-100">
+          <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Annulla</button>
+          <button onClick={handleDeleteOffer} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">Elimina</button>
+        </div>
       </Modal>
     </div>
   )

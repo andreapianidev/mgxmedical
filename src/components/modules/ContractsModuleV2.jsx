@@ -8,7 +8,7 @@ import KpiCard from '../shared/KpiCard'
 import Modal from '../shared/Modal'
 import EmptyState from '../shared/EmptyState'
 import StatusChip from '../shared/StatusChip'
-import { FileText as FileSignature, Plus, Edit, Clock, DollarSign, Building2, Mail, AlertTriangle, Eye } from 'lucide-react'
+import { FileText as FileSignature, Plus, Edit, Clock, DollarSign, Building2, Mail, AlertTriangle, Eye, Trash2 } from 'lucide-react'
 
 const STATUS_TABS = ['Tutti', 'Attivi', 'In Scadenza', 'Scaduti']
 const TYPE_OPTIONS = ['Tutti', 'Full Service', 'Time & Material', 'Preventiva Only']
@@ -28,7 +28,7 @@ const emptyContract = {
 }
 
 export default function ContractsModuleV2() {
-  const { contracts, addContract, updateContract } = useGlobalStore()
+  const { contracts, addContract, updateContract, deleteContract } = useGlobalStore()
   const { addToast } = useToast()
 
   const [search, setSearch] = useState('')
@@ -39,6 +39,7 @@ export default function ContractsModuleV2() {
   const [form, setForm] = useState(emptyContract)
 
   const [detailModal, setDetailModal] = useState({ open: false, contract: null })
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   // --- KPIs ---
   const kpis = useMemo(() => {
@@ -110,6 +111,17 @@ export default function ContractsModuleV2() {
       addToast('success', `Contratto ${form.code} creato.`)
     }
     closeFormModal()
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    try {
+      await deleteContract(deleteTarget.id)
+      addToast('success', `Contratto ${deleteTarget.code} eliminato.`)
+    } catch (err) {
+      addToast('error', err.message || 'Errore durante l\'eliminazione.')
+    }
+    setDeleteTarget(null)
   }
 
   // --- Detail modal ---
@@ -204,6 +216,9 @@ export default function ContractsModuleV2() {
                         </button>
                         <button onClick={() => openEdit(c)} title="Modifica" className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 hover:text-blue-600">
                           <Edit size={15} />
+                        </button>
+                        <button onClick={() => setDeleteTarget(c)} title="Elimina" className="p-1.5 rounded-lg hover:bg-red-50 transition-colors text-gray-500 hover:text-red-500">
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </td>
@@ -374,6 +389,17 @@ export default function ContractsModuleV2() {
               {formModal.contract ? 'Salva modifiche' : 'Crea contratto'}
             </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation */}
+      <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Conferma eliminazione" maxWidth="max-w-sm">
+        <p className="text-sm text-gray-600">
+          Sei sicuro di voler eliminare il contratto <strong>{deleteTarget?.code}</strong>? Questa azione non può essere annullata.
+        </p>
+        <div className="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-gray-100">
+          <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Annulla</button>
+          <button onClick={handleDelete} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">Elimina</button>
         </div>
       </Modal>
     </div>

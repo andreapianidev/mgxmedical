@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
+import { useToast } from '../../contexts/ToastContext'
 import { formatDate, formatCurrency } from '../../lib/utils'
 import SectionHeader from '../shared/SectionHeader'
 import KpiCard from '../shared/KpiCard'
@@ -43,6 +44,7 @@ const TABS = [
 
 export default function ClientPortalModule() {
   const { contracts, interventions, devices, schedMaint } = useGlobalStore()
+  const { addToast } = useToast()
 
   const [selectedClient, setSelectedClient] = useState(null)
   const [activeTab, setActiveTab] = useState('overview')
@@ -312,7 +314,10 @@ export default function ClientPortalModule() {
                           <p className="text-sm font-medium text-gray-800 truncate">{doc.title}</p>
                           <p className="text-xs text-gray-400">{formatDate(doc.date)} &mdash; {doc.fileName}</p>
                         </div>
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors">
+                        <button
+                          onClick={() => addToast('info', `Download ${doc.fileName} — funzionalità in arrivo`)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                        >
                           <Download size={13} /> Scarica
                         </button>
                       </div>

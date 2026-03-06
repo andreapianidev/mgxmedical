@@ -50,5 +50,19 @@ export default async function handler(req, res) {
     }
   }
 
-  return methodNotAllowed(res, 'GET, PUT');
+  if (req.method === 'DELETE') {
+    try {
+      const rows = await sql`
+        DELETE FROM contracts
+        WHERE id = ${id}::uuid AND tenant_id = ${user.tenantId}
+        RETURNING id
+      `;
+      if (rows.length === 0) return res.status(404).json({ error: 'Contratto non trovato' });
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      return handleError(res, err);
+    }
+  }
+
+  return methodNotAllowed(res, 'GET, PUT, DELETE');
 }

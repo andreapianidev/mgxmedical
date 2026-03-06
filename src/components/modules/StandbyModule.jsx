@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
+import { useToast } from '../../contexts/ToastContext'
 import { DEMO_USERS } from '../../data/demoData'
-import { formatDate } from '../../lib/utils'
 import {
   startOfWeek, endOfWeek, eachDayOfInterval, addWeeks,
   format, isSameDay, isToday,
@@ -9,8 +9,7 @@ import {
 import { it } from 'date-fns/locale'
 import SectionHeader from '../shared/SectionHeader'
 import Modal from '../shared/Modal'
-import EmptyState from '../shared/EmptyState'
-import { Moon, Sun, Plus, Phone, ChevronLeft, ChevronRight, User, Clock } from 'lucide-react'
+import { Moon, Sun, Plus, Phone, ChevronLeft, ChevronRight, User, Clock, Edit, Trash2 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -22,9 +21,12 @@ const SHIFT_TYPES = {
 const TECHNICIANS = DEMO_USERS.filter(u => u.role === 'technician')
 
 export default function StandbyModule() {
-  const { shifts, addShift } = useGlobalStore()
+  const { shifts, addShift, updateShift, deleteShift } = useGlobalStore()
+  const { addToast } = useToast()
   const [weekOffset, setWeekOffset] = useState(0)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editingShift, setEditingShift] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
   const [form, setForm] = useState({
     techId: TECHNICIANS[0]?.id || '',
     shiftType: 'standby',
@@ -77,15 +79,54 @@ export default function StandbyModule() {
   // --- Handlers ---
   const handleFormChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }))
 
-  const handleSaveShift = () => {
+  const resetForm = () => {
+    setForm({ techId: TECHNICIANS[0]?.id || '', shiftType: 'standby', date: format(new Date(), 'yyyy-MM-dd'), startTime: '08:00', endTime: '17:00' })
+    setEditingShift(null)
+  }
+
+  const handleSaveShift = async () => {
     const tech = TECHNICIANS.find(t => t.id === form.techId)
     if (!tech) return
-    addShift({
+    const shiftData = {
       techId: tech.id, techName: tech.name, shiftType: form.shiftType,
       shiftDate: form.date, startTime: form.startTime, endTime: form.endTime,
-    })
+    }
+    try {
+      if (editingShift) {
+        await updateShift(editingShift.id, shiftData)
+        addToast('success', 'Turno aggiornato con successo')
+      } else {
+        await addShift(shiftData)
+        addToast('success', 'Turno creato con successo')
+      }
+    } catch {
+      addToast('error', editingShift ? 'Errore nell\'aggiornamento del turno' : 'Errore nella creazione del turno')
+    }
     setShowAddModal(false)
-    setForm({ techId: TECHNICIANS[0]?.id || '', shiftType: 'standby', date: format(new Date(), 'yyyy-MM-dd'), startTime: '08:00', endTime: '17:00' })
+    resetForm()
+  }
+
+  const openEditShift = (shift) => {
+    setEditingShift(shift)
+    setForm({
+      techId: shift.techId || TECHNICIANS[0]?.id || '',
+      shiftType: shift.shiftType || 'standby',
+      date: shift.shiftDate ? format(new Date(shift.shiftDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+      startTime: shift.startTime || '08:00',
+      endTime: shift.endTime || '17:00',
+    })
+    setShowAddModal(true)
+  }
+
+  const handleDeleteShift = async () => {
+    if (!deleteTarget) return
+    try {
+      await deleteShift(deleteTarget.id)
+      addToast('success', 'Turno eliminato con successo')
+    } catch {
+      addToast('error', 'Errore nell\'eliminazione del turno')
+    }
+    setDeleteTarget(null)
   }
 
   const getShiftForDayType = (day, type) =>
@@ -129,10 +170,10 @@ export default function StandbyModule() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button className="p-2.5 rounded-lg bg-green-50 hover:bg-green-100 transition-colors" title="Chiama">
-                <Phone size={16} className="text-green-600" />
-              </button>
-              <button className="px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1.5">
+              <button
+                onClick={() => addToast('info', `Chiamata a ${onDutyTech.name} — funzionalità in arrivo`)}
+                className="px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1.5"
+              >
                 <Phone size={14} /> Chiama
               </button>
             </div>
@@ -190,13 +231,29 @@ export default function StandbyModule() {
                       <td key={day.toISOString()} className={`px-2 py-3 text-center ${isToday(day) ? 'bg-blue-50/50' : ''}`}>
                         {dayShifts.length > 0 ? (
                           dayShifts.map(s => (
-                            <span
+                            <div
                               key={s.id}
-                              className="inline-block px-2 py-1 rounded text-[11px] font-medium mb-0.5"
+                              className="group relative inline-flex items-center gap-0.5 px-2 py-1 rounded text-[11px] font-medium mb-0.5"
                               style={{ backgroundColor: cfg.bg, color: cfg.color }}
                             >
-                              {s.techName?.split(' ')[0]}
-                            </span>
+                              <span>{s.techName?.split(' ')[0]}</span>
+                              <div className="hidden group-hover:inline-flex items-center gap-0.5 ml-0.5">
+                                <button
+                                  onClick={() => openEditShift(s)}
+                                  className="p-0.5 rounded hover:bg-white/40 transition-colors"
+                                  title="Modifica"
+                                >
+                                  <Edit size={10} />
+                                </button>
+                                <button
+                                  onClick={() => setDeleteTarget(s)}
+                                  className="p-0.5 rounded hover:bg-red-200/50 transition-colors"
+                                  title="Elimina"
+                                >
+                                  <Trash2 size={10} />
+                                </button>
+                              </div>
+                            </div>
                           ))
                         ) : (
                           <span className="text-gray-300 text-xs">—</span>
@@ -240,7 +297,7 @@ export default function StandbyModule() {
       </div>
 
       {/* Add Shift Modal */}
-      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Nuovo Turno" subtitle="Assegna un turno a un tecnico">
+      <Modal isOpen={showAddModal} onClose={() => { setShowAddModal(false); resetForm() }} title={editingShift ? 'Modifica Turno' : 'Nuovo Turno'} subtitle={editingShift ? 'Modifica i dati del turno' : 'Assegna un turno a un tecnico'}>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Tecnico</label>
@@ -298,11 +355,29 @@ export default function StandbyModule() {
             </div>
           </div>
           <div className="flex items-center justify-end gap-2 pt-2">
-            <button onClick={() => setShowAddModal(false)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+            <button onClick={() => { setShowAddModal(false); resetForm() }} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
               Annulla
             </button>
             <button onClick={handleSaveShift} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
-              Salva Turno
+              {editingShift ? 'Aggiorna Turno' : 'Salva Turno'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Conferma eliminazione" maxWidth="max-w-md">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Sei sicuro di voler eliminare il turno di <strong>{deleteTarget?.techName}</strong> del{' '}
+            <strong>{deleteTarget?.shiftDate ? format(new Date(deleteTarget.shiftDate), 'dd/MM/yyyy') : ''}</strong>?
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              Annulla
+            </button>
+            <button onClick={handleDeleteShift} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
+              Elimina
             </button>
           </div>
         </div>

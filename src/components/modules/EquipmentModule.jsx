@@ -8,7 +8,8 @@ import StatusChip from '../shared/StatusChip'
 import KpiCard from '../shared/KpiCard'
 import Modal from '../shared/Modal'
 import EmptyState from '../shared/EmptyState'
-import { Microscope, Wrench, User, Calendar, AlertTriangle, Plus, Eye, CheckCircle2 } from 'lucide-react'
+import { useToast } from '../../contexts/ToastContext'
+import { Microscope, Wrench, User, Calendar, AlertTriangle, Plus, Eye, CheckCircle2, Trash2 } from 'lucide-react'
 
 const STATUS_TABS = ['Tutti', 'Disponibile', 'In uso', 'Manutenzione']
 const STATUS_MAP = { 'Disponibile': 'available', 'In uso': 'in-use', 'Manutenzione': 'maintenance' }
@@ -22,7 +23,8 @@ function calibrationAlert(calibrationDue) {
 }
 
 export default function EquipmentModule() {
-  const { equipment, updateEquipment, interventions } = useGlobalStore()
+  const { equipment, updateEquipment, addEquipment, deleteEquipment, interventions } = useGlobalStore()
+  const { addToast } = useToast()
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('Tutti')
@@ -31,6 +33,9 @@ export default function EquipmentModule() {
   const [assignModal, setAssignModal] = useState({ open: false, item: null })
   const [assignTech, setAssignTech] = useState('')
   const [assignNote, setAssignNote] = useState('')
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [addForm, setAddForm] = useState({ code: '', name: '', category: '', calibrationDue: '' })
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   const technicians = DEMO_USERS.filter(u => u.role === 'technician' || u.role === 'admin')
   const categories = useMemo(() => [...new Set(equipment.map(e => e.category))].sort(), [equipment])
@@ -100,9 +105,48 @@ export default function EquipmentModule() {
     setDetailItem(null)
   }
 
+  const handleAddEquipment = async () => {
+    if (!addForm.code || !addForm.name) {
+      addToast('error', 'Codice e nome sono obbligatori.')
+      return
+    }
+    try {
+      await addEquipment({
+        code: addForm.code,
+        name: addForm.name,
+        category: addForm.category || 'Generico',
+        status: 'available',
+        calibrationDue: addForm.calibrationDue || null,
+      })
+      addToast('success', 'Strumento aggiunto con successo')
+      setShowAddModal(false)
+      setAddForm({ code: '', name: '', category: '', calibrationDue: '' })
+    } catch {
+      addToast('error', 'Errore nell\'aggiunta dello strumento')
+    }
+  }
+
+  const handleDeleteEquipment = async () => {
+    if (!deleteTarget) return
+    try {
+      await deleteEquipment(deleteTarget.id)
+      addToast('success', 'Strumento eliminato con successo')
+    } catch {
+      addToast('error', 'Errore nell\'eliminazione dello strumento')
+    }
+    setDeleteTarget(null)
+  }
+
   return (
     <div className="space-y-6">
-      <SectionHeader title="Strumentazione" subtitle="Gestione attrezzature tecniche e calibrazioni" />
+      <SectionHeader title="Strumentazione" subtitle="Gestione attrezzature tecniche e calibrazioni">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus size={14} /> Nuovo Strumento
+        </button>
+      </SectionHeader>
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -199,6 +243,12 @@ export default function EquipmentModule() {
                             <Plus size={15} className="text-blue-600" />
                           </button>
                         )}
+                        <button
+                          onClick={(ev) => { ev.stopPropagation(); setDeleteTarget(e) }}
+                          className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" title="Elimina"
+                        >
+                          <Trash2 size={15} className="text-gray-400 hover:text-red-500" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -330,6 +380,80 @@ export default function EquipmentModule() {
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               Conferma assegnazione
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add Equipment Modal */}
+      <Modal isOpen={showAddModal} onClose={() => { setShowAddModal(false); setAddForm({ code: '', name: '', category: '', calibrationDue: '' }) }} title="Nuovo Strumento" subtitle="Aggiungi una nuova attrezzatura">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Codice *</label>
+            <input
+              type="text"
+              value={addForm.code}
+              onChange={e => setAddForm(prev => ({ ...prev, code: e.target.value }))}
+              placeholder="es. STR-001"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+            <input
+              type="text"
+              value={addForm.name}
+              onChange={e => setAddForm(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="es. Multimetro digitale"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+            <input
+              type="text"
+              value={addForm.category}
+              onChange={e => setAddForm(prev => ({ ...prev, category: e.target.value }))}
+              placeholder="es. Misura, Diagnostica..."
+              list="equipment-categories"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            />
+            <datalist id="equipment-categories">
+              {categories.map(c => <option key={c} value={c} />)}
+            </datalist>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Scadenza Calibrazione</label>
+            <input
+              type="date"
+              value={addForm.calibrationDue}
+              onChange={e => setAddForm(prev => ({ ...prev, calibrationDue: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            />
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button onClick={() => { setShowAddModal(false); setAddForm({ code: '', name: '', category: '', calibrationDue: '' }) }} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              Annulla
+            </button>
+            <button onClick={handleAddEquipment} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+              Aggiungi Strumento
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Conferma eliminazione" maxWidth="max-w-md">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Sei sicuro di voler eliminare lo strumento <strong>{deleteTarget?.name}</strong> ({deleteTarget?.code})?
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              Annulla
+            </button>
+            <button onClick={handleDeleteEquipment} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
+              Elimina
             </button>
           </div>
         </div>

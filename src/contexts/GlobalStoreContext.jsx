@@ -33,6 +33,18 @@ export function GlobalStoreProvider({ children }) {
   useEffect(() => { calEventsRef.current = calEvents }, [calEvents])
   const notificationsRef = useRef(notifications)
   useEffect(() => { notificationsRef.current = notifications }, [notifications])
+  const contractsRef = useRef(contracts)
+  useEffect(() => { contractsRef.current = contracts }, [contracts])
+  const offersRef = useRef(offers)
+  useEffect(() => { offersRef.current = offers }, [offers])
+  const schedMaintRef = useRef(schedMaint)
+  useEffect(() => { schedMaintRef.current = schedMaint }, [schedMaint])
+  const shiftsRef = useRef(shifts)
+  useEffect(() => { shiftsRef.current = shifts }, [shifts])
+  const equipmentRef = useRef(equipment)
+  useEffect(() => { equipmentRef.current = equipment }, [equipment])
+  const fleetRef = useRef(fleet)
+  useEffect(() => { fleetRef.current = fleet }, [fleet])
 
   // --- Initial data fetch ---
   useEffect(() => {
@@ -116,6 +128,17 @@ export function GlobalStoreProvider({ children }) {
       return created
     } catch (err) {
       setInterventions(prev => prev.filter(i => i.id !== tempId))
+      throw err
+    }
+  }, [])
+
+  const deleteIntervention = useCallback(async (id) => {
+    const prev = interventionsRef.current
+    setInterventions(p => p.filter(i => i.id !== id))
+    try {
+      await api.delete(`/interventions/${id}`)
+    } catch (err) {
+      setInterventions(prev)
       throw err
     }
   }, [])
@@ -210,6 +233,17 @@ export function GlobalStoreProvider({ children }) {
     }
   }, [])
 
+  const deleteDevice = useCallback(async (id) => {
+    const prev = devicesRef.current
+    setDevices(p => p.filter(d => d.id !== id))
+    try {
+      await api.delete(`/devices/${id}`)
+    } catch (err) {
+      setDevices(prev)
+      throw err
+    }
+  }, [])
+
   // --- Warehouse CRUD ---
   const addWarehouseItem = useCallback(async (item) => {
     const tempId = crypto.randomUUID()
@@ -237,6 +271,17 @@ export function GlobalStoreProvider({ children }) {
     }
   }, [])
 
+  const deleteWarehouseItem = useCallback(async (id) => {
+    const prev = warehouseRef.current
+    setWarehouse(p => p.filter(w => w.id !== id))
+    try {
+      await api.delete(`/warehouse/${id}`)
+    } catch (err) {
+      setWarehouse(prev)
+      throw err
+    }
+  }, [])
+
   // --- Contracts CRUD ---
   const addContract = useCallback(async (contract) => {
     const tempId = crypto.randomUUID()
@@ -260,6 +305,17 @@ export function GlobalStoreProvider({ children }) {
     } catch (err) {
       const fresh = await api.get('/contracts')
       setContracts(fresh)
+      throw err
+    }
+  }, [])
+
+  const deleteContract = useCallback(async (id) => {
+    const prev = contractsRef.current
+    setContracts(p => p.filter(c => c.id !== id))
+    try {
+      await api.delete(`/contracts/${id}`)
+    } catch (err) {
+      setContracts(prev)
       throw err
     }
   }, [])
@@ -319,6 +375,17 @@ export function GlobalStoreProvider({ children }) {
     }
   }, [])
 
+  const deleteOffer = useCallback(async (id) => {
+    const prev = offersRef.current
+    setOffers(p => p.filter(o => o.id !== id))
+    try {
+      await api.delete(`/offers/${id}`)
+    } catch (err) {
+      setOffers(prev)
+      throw err
+    }
+  }, [])
+
   // --- Maintenance CRUD ---
   const addMaintenance = useCallback(async (m) => {
     const tempId = crypto.randomUUID()
@@ -344,6 +411,29 @@ export function GlobalStoreProvider({ children }) {
     } catch (err) {
       const fresh = await api.get('/maintenance')
       setSchedMaint(fresh)
+      throw err
+    }
+  }, [])
+
+  const updateMaintenance = useCallback(async (id, updates) => {
+    setSchedMaint(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m))
+    try {
+      const updated = await api.put(`/maintenance/${id}`, updates)
+      setSchedMaint(prev => prev.map(m => m.id === id ? updated : m))
+    } catch (err) {
+      const fresh = await api.get('/maintenance')
+      setSchedMaint(fresh)
+      throw err
+    }
+  }, [])
+
+  const deleteMaintenance = useCallback(async (id) => {
+    const prev = schedMaintRef.current
+    setSchedMaint(p => p.filter(m => m.id !== id))
+    try {
+      await api.delete(`/maintenance/${id}`)
+    } catch (err) {
+      setSchedMaint(prev)
       throw err
     }
   }, [])
@@ -397,6 +487,29 @@ export function GlobalStoreProvider({ children }) {
       return created
     } catch (err) {
       setShifts(prev => prev.filter(s => s.id !== tempId))
+      throw err
+    }
+  }, [])
+
+  const updateShift = useCallback(async (id, updates) => {
+    setShifts(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s))
+    try {
+      const updated = await api.put(`/shifts/${id}`, updates)
+      setShifts(prev => prev.map(s => s.id === id ? updated : s))
+    } catch (err) {
+      const fresh = await api.get('/shifts')
+      setShifts(fresh)
+      throw err
+    }
+  }, [])
+
+  const deleteShift = useCallback(async (id) => {
+    const prev = shiftsRef.current
+    setShifts(p => p.filter(s => s.id !== id))
+    try {
+      await api.delete(`/shifts/${id}`)
+    } catch (err) {
+      setShifts(prev)
       throw err
     }
   }, [])
@@ -456,6 +569,20 @@ export function GlobalStoreProvider({ children }) {
   }, [])
 
   // --- Equipment CRUD ---
+  const addEquipment = useCallback(async (eq) => {
+    const tempId = crypto.randomUUID()
+    const optimistic = { ...eq, id: tempId, createdAt: new Date().toISOString() }
+    setEquipment(prev => [optimistic, ...prev])
+    try {
+      const created = await api.post('/equipment', eq)
+      setEquipment(prev => prev.map(e => e.id === tempId ? created : e))
+      return created
+    } catch (err) {
+      setEquipment(prev => prev.filter(e => e.id !== tempId))
+      throw err
+    }
+  }, [])
+
   const updateEquipment = useCallback(async (id, updates) => {
     setEquipment(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e))
     try {
@@ -464,6 +591,55 @@ export function GlobalStoreProvider({ children }) {
     } catch (err) {
       const fresh = await api.get('/equipment')
       setEquipment(fresh)
+      throw err
+    }
+  }, [])
+
+  const deleteEquipment = useCallback(async (id) => {
+    const prev = equipmentRef.current
+    setEquipment(p => p.filter(e => e.id !== id))
+    try {
+      await api.delete(`/equipment/${id}`)
+    } catch (err) {
+      setEquipment(prev)
+      throw err
+    }
+  }, [])
+
+  // --- Fleet CRUD ---
+  const addFleet = useCallback(async (vehicle) => {
+    const tempId = crypto.randomUUID()
+    const optimistic = { ...vehicle, id: tempId, createdAt: new Date().toISOString() }
+    setFleet(prev => [optimistic, ...prev])
+    try {
+      const created = await api.post('/fleet', vehicle)
+      setFleet(prev => prev.map(f => f.id === tempId ? created : f))
+      return created
+    } catch (err) {
+      setFleet(prev => prev.filter(f => f.id !== tempId))
+      throw err
+    }
+  }, [])
+
+  const updateFleet = useCallback(async (id, updates) => {
+    setFleet(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f))
+    try {
+      const updated = await api.put(`/fleet/${id}`, updates)
+      setFleet(prev => prev.map(f => f.id === id ? updated : f))
+    } catch (err) {
+      const fresh = await api.get('/fleet')
+      setFleet(fresh)
+      throw err
+    }
+  }, [])
+
+  const deleteFleet = useCallback(async (id) => {
+    const prev = fleetRef.current
+    setFleet(p => p.filter(f => f.id !== id))
+    try {
+      await api.delete(`/fleet/${id}`)
+    } catch (err) {
+      setFleet(prev)
       throw err
     }
   }, [])
@@ -507,26 +683,28 @@ export function GlobalStoreProvider({ children }) {
     // Loading state
     loading, error,
     // Interventions
-    addIntervention, updateIntervention, closeIntervention,
+    addIntervention, updateIntervention, closeIntervention, deleteIntervention,
     // Devices
-    addDevice, updateDevice,
+    addDevice, updateDevice, deleteDevice,
     // Warehouse
-    addWarehouseItem, updateWarehouseItem,
+    addWarehouseItem, updateWarehouseItem, deleteWarehouseItem,
     // Contracts
-    addContract, updateContract,
+    addContract, updateContract, deleteContract,
     // Offers
-    addOffer, updateOffer, acceptOffer, declineOffer,
+    addOffer, updateOffer, acceptOffer, declineOffer, deleteOffer,
     // Maintenance
-    addMaintenance, completeMaintenance,
+    addMaintenance, updateMaintenance, completeMaintenance, deleteMaintenance,
     // Calendar
     addCalEvent, updateCalEvent, deleteCalEvent,
     // Shifts
-    addShift,
+    addShift, updateShift, deleteShift,
     // Notifications
     addNotification, markNotificationRead, markAllNotificationsRead,
     toggleNotificationPin, deleteNotification,
     // Equipment
-    updateEquipment,
+    addEquipment, updateEquipment, deleteEquipment,
+    // Fleet
+    addFleet, updateFleet, deleteFleet,
     // Attachments
     addAttachment,
     // Activity

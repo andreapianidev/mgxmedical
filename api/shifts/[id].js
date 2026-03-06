@@ -13,9 +13,9 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const rows = await sql`
-        SELECT * FROM warehouse WHERE id = ${id}::uuid AND tenant_id = ${user.tenantId}
+        SELECT * FROM shifts WHERE id = ${id}::uuid AND tenant_id = ${user.tenantId}
       `;
-      if (rows.length === 0) return res.status(404).json({ error: 'Articolo non trovato' });
+      if (rows.length === 0) return res.status(404).json({ error: 'Turno non trovato' });
       return res.status(200).json(toCamel(rows[0]));
     } catch (err) {
       return handleError(res, err);
@@ -26,21 +26,17 @@ export default async function handler(req, res) {
     const b = req.body || {};
     try {
       const rows = await sql`
-        UPDATE warehouse SET
-          code = COALESCE(${b.code ?? null}, code),
-          name = COALESCE(${b.name ?? null}, name),
-          category = COALESCE(${b.category ?? null}, category),
-          qty = COALESCE(${b.qty ?? null}, qty),
-          min_qty = COALESCE(${b.minQty ?? null}, min_qty),
-          unit_cost = COALESCE(${b.unitCost ?? null}, unit_cost),
-          supplier = COALESCE(${b.supplier ?? null}, supplier),
-          lead_time_days = COALESCE(${b.leadTimeDays ?? null}, lead_time_days),
-          location = COALESCE(${b.location ?? null}, location),
-          compatible = COALESCE(${b.compatible ?? null}, compatible)
+        UPDATE shifts SET
+          tech_id = COALESCE(${b.techId ?? null}, tech_id),
+          tech_name = COALESCE(${b.techName ?? null}, tech_name),
+          shift_type = COALESCE(${b.shiftType ?? null}, shift_type),
+          shift_date = COALESCE(${b.shiftDate ?? null}, shift_date),
+          start_time = COALESCE(${b.startTime ?? null}, start_time),
+          end_time = COALESCE(${b.endTime ?? null}, end_time)
         WHERE id = ${id}::uuid AND tenant_id = ${user.tenantId}
         RETURNING *
       `;
-      if (rows.length === 0) return res.status(404).json({ error: 'Articolo non trovato' });
+      if (rows.length === 0) return res.status(404).json({ error: 'Turno non trovato' });
       return res.status(200).json(toCamel(rows[0]));
     } catch (err) {
       return handleError(res, err);
@@ -50,11 +46,11 @@ export default async function handler(req, res) {
   if (req.method === 'DELETE') {
     try {
       const rows = await sql`
-        DELETE FROM warehouse
+        DELETE FROM shifts
         WHERE id = ${id}::uuid AND tenant_id = ${user.tenantId}
         RETURNING id
       `;
-      if (rows.length === 0) return res.status(404).json({ error: 'Articolo non trovato' });
+      if (rows.length === 0) return res.status(404).json({ error: 'Turno non trovato' });
       return res.status(200).json({ ok: true });
     } catch (err) {
       return handleError(res, err);

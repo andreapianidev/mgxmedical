@@ -9,7 +9,7 @@ import KpiCard from '../shared/KpiCard'
 import Modal from '../shared/Modal'
 import EmptyState from '../shared/EmptyState'
 import StatusChip from '../shared/StatusChip'
-import { Package, Plus, Edit, AlertTriangle, AlertCircle, DollarSign, Minus, RotateCcw, Info } from 'lucide-react'
+import { Package, Plus, Edit, AlertTriangle, AlertCircle, DollarSign, Minus, RotateCcw, Info, Trash2 } from 'lucide-react'
 
 const CATEGORIES = ['Tutti', 'Batterie', 'Guarnizioni', 'Filtri', 'Kit', 'Elettronica', 'Meccanica']
 const STATUS_TABS = ['Tutti', 'Disponibile', 'Scorta Bassa', 'Esaurito']
@@ -20,7 +20,7 @@ const emptyItem = {
 }
 
 export default function WarehouseModuleV2() {
-  const { warehouse, addWarehouseItem, updateWarehouseItem, logActivity } = useGlobalStore()
+  const { warehouse, addWarehouseItem, updateWarehouseItem, deleteWarehouseItem, logActivity } = useGlobalStore()
   const { user } = useAuth()
   const { addToast } = useToast()
 
@@ -31,6 +31,7 @@ export default function WarehouseModuleV2() {
   const [itemModal, setItemModal] = useState({ open: false, item: null })
   const [form, setForm] = useState(emptyItem)
 
+  const [deleteTarget, setDeleteTarget] = useState(null)
   const [adjModal, setAdjModal] = useState({ open: false, item: null })
   const [adjQty, setAdjQty] = useState(0)
   const [adjNote, setAdjNote] = useState('')
@@ -94,6 +95,17 @@ export default function WarehouseModuleV2() {
       addToast('success', `Articolo ${form.code} aggiunto al magazzino.`)
     }
     closeItemModal()
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    try {
+      await deleteWarehouseItem(deleteTarget.id)
+      addToast('success', `Articolo ${deleteTarget.code} eliminato.`)
+    } catch (err) {
+      addToast('error', err.message || 'Errore durante l\'eliminazione.')
+    }
+    setDeleteTarget(null)
   }
 
   // --- adjustment modal ---
@@ -226,6 +238,9 @@ export default function WarehouseModuleV2() {
                         <button onClick={() => openAdj(w)} title="Rettifica quantita" className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 hover:text-orange-600">
                           <RotateCcw size={15} />
                         </button>
+                        <button onClick={() => setDeleteTarget(w)} title="Elimina" className="p-1.5 rounded-lg hover:bg-red-50 transition-colors text-gray-500 hover:text-red-500">
+                          <Trash2 size={15} />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -329,6 +344,17 @@ export default function WarehouseModuleV2() {
             <button onClick={closeAdj} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Annulla</button>
             <button onClick={handleSaveAdj} className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors">Conferma rettifica</button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation */}
+      <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Conferma eliminazione" maxWidth="max-w-sm">
+        <p className="text-sm text-gray-600">
+          Sei sicuro di voler eliminare l'articolo <strong>{deleteTarget?.code}</strong>? Questa azione non può essere annullata.
+        </p>
+        <div className="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-gray-100">
+          <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Annulla</button>
+          <button onClick={handleDelete} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">Elimina</button>
         </div>
       </Modal>
     </div>
