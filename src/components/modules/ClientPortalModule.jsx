@@ -16,23 +16,7 @@ import {
   Copy, ExternalLink, Download, CheckCircle2, Clock,
 } from 'lucide-react'
 
-// ---------------------------------------------------------------------------
-// Static SLA demo data (12 months)
-// ---------------------------------------------------------------------------
-const SLA_MONTHLY_DATA = [
-  { month: 'Gen', compliance: 94 },
-  { month: 'Feb', compliance: 97 },
-  { month: 'Mar', compliance: 91 },
-  { month: 'Apr', compliance: 99 },
-  { month: 'Mag', compliance: 96 },
-  { month: 'Giu', compliance: 88 },
-  { month: 'Lug', compliance: 100 },
-  { month: 'Ago', compliance: 93 },
-  { month: 'Set', compliance: 98 },
-  { month: 'Ott', compliance: 95 },
-  { month: 'Nov', compliance: 92 },
-  { month: 'Dic', compliance: 97 },
-]
+const MONTH_LABELS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']
 
 const TABS = [
   { key: 'overview', label: 'Overview', icon: BarChart3 },
@@ -91,6 +75,20 @@ export default function ClientPortalModule() {
   const nextPM = clientMaint
     .filter(m => m.status === 'planned')
     .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate))[0]
+
+  // Calculate SLA monthly data from real interventions for selected client
+  const slaMonthlyData = useMemo(() => {
+    if (!selectedClient) return MONTH_LABELS.map(m => ({ month: m, compliance: 0 }))
+    return MONTH_LABELS.map((label, monthIdx) => {
+      const monthInts = clientInterventions.filter(i => {
+        if (!i.createdAt) return false
+        return new Date(i.createdAt).getMonth() === monthIdx
+      })
+      if (monthInts.length === 0) return { month: label, compliance: 100 }
+      const completed = monthInts.filter(i => i.status === 'completed').length
+      return { month: label, compliance: Math.round((completed / monthInts.length) * 100) }
+    })
+  }, [clientInterventions, selectedClient])
 
   // Client code for portal link
   const clientCode = selectedClient
@@ -281,7 +279,7 @@ export default function ClientPortalModule() {
                   </h3>
                   <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={SLA_MONTHLY_DATA} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                      <BarChart data={slaMonthlyData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                         <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6B7280' }} />
                         <YAxis domain={[80, 100]} tick={{ fontSize: 12, fill: '#6B7280' }} />

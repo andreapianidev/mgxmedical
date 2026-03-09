@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
 import { useToast } from '../../contexts/ToastContext'
-import { DEMO_USERS } from '../../data/demoData'
 import SectionHeader from '../shared/SectionHeader'
 import KpiCard from '../shared/KpiCard'
 import StatusChip from '../shared/StatusChip'
@@ -34,18 +33,16 @@ function deriveTechStatus(techName, interventions) {
 }
 
 export default function FleetModule() {
-  const { fleet, interventions, deleteFleet } = useGlobalStore()
+  const { fleet, interventions, deleteFleet, users } = useGlobalStore()
   const { addToast } = useToast()
 
   // --- Navigation modal state ---
   const [navModal, setNavModal] = useState({ open: false, tech: null, intervention: null })
   const [deleteTarget, setDeleteTarget] = useState(null)
 
-  // --- Build technician list from DEMO_USERS + fleet ---
+  // --- Build technician list from DB users + fleet ---
   const technicians = useMemo(() => {
-    // Start with DEMO_USERS technicians
-    const techUsers = DEMO_USERS.filter(u => u.role === 'technician')
-    // Also consider fleet-assigned tech names not already present
+    const techUsers = users.filter(u => u.role === 'technician')
     const techMap = new Map(techUsers.map(t => [t.name, t]))
     fleet.forEach(v => {
       if (v.techName && !techMap.has(v.techName)) {
@@ -70,7 +67,7 @@ export default function FleetModule() {
       )
       return { ...tech, vehicle, status, activeCount, activeIntervention }
     })
-  }, [fleet, interventions])
+  }, [fleet, interventions, users])
 
   // --- KPIs ---
   const activeVehicles = fleet.filter(v => v.status === 'active').length
@@ -135,7 +132,7 @@ export default function FleetModule() {
         />
         <KpiCard
           icon={TrendingUp}
-          value="87.4%"
+          value={totalVehicles > 0 ? `${((activeVehicles / totalVehicles) * 100).toFixed(1)}%` : '0%'}
           label="Efficienza Flotta"
           color="#1ABC9C"
         />

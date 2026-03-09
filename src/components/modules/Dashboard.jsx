@@ -16,7 +16,7 @@ import { differenceInDays } from 'date-fns'
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { interventions, devices, notifications, schedMaint, updateIntervention } = useGlobalStore()
+  const { interventions, devices, notifications, schedMaint, updateIntervention, fleet } = useGlobalStore()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [ackModal, setAckModal] = useState({ open: false, intervention: null })
@@ -60,8 +60,11 @@ export default function Dashboard() {
       n => n.severity === 'critical' && !n.isRead
     ).length
 
-    return { active, pending, completed, compliance, techsInField, criticalAlerts }
-  }, [interventions, schedMaint, notifications])
+    const activeVehicles = fleet.filter(v => v.status === 'active').length
+    const fleetEff = fleet.length > 0 ? ((activeVehicles / fleet.length) * 100).toFixed(1) : '0.0'
+
+    return { active, pending, completed, compliance, techsInField, criticalAlerts, fleetEff }
+  }, [interventions, schedMaint, notifications, fleet])
 
   // --- Pending Interventions for Live Board ---
   const pendingInterventions = useMemo(() =>
@@ -170,7 +173,7 @@ export default function Dashboard() {
         <KpiCard icon={Activity} value={kpis.active} label="Interventi Attivi" color="#2E86C1" />
         <KpiCard icon={Clock} value={kpis.pending} label="In Attesa" color="#E67E22" />
         <KpiCard icon={CheckCircle2} value={kpis.completed} label="Completati" color="#27AE60" />
-        <KpiCard icon={Truck} value="87.4%" label="Efficienza Flotta" color="#1ABC9C" />
+        <KpiCard icon={Truck} value={`${kpis.fleetEff}%`} label="Efficienza Flotta" color="#1ABC9C" />
         <KpiCard icon={Shield} value={`${kpis.compliance}%`} label="Compliance Score" color="#8E44AD" />
         <KpiCard icon={Users} value={kpis.techsInField} label="Tecnici in Campo" color="#17A2B8" />
         <KpiCard icon={AlertTriangle} value={kpis.criticalAlerts} label="Allerte ML Critiche" color="#C0392B" />

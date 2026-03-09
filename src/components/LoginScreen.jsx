@@ -2,11 +2,18 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
-import { DEMO_USERS } from '../data/demoData'
 import { Shield, LogIn } from 'lucide-react'
 
 const ROLE_EMOJI = { admin: '👑', technician: '🔧', secretary: '📋', client: '🏥' }
 const ROLE_LABEL = { admin: 'Amministratore', technician: 'Tecnico', secretary: 'Segreteria', client: 'Cliente' }
+
+// Quick-login accounts for demo (passwords match seed data in DB)
+const QUICK_LOGIN_ACCOUNTS = [
+  { name: 'Alessandro Ferretti', role: 'admin',      email: 'a.ferretti@mgxmedical.com', password: 'admin123' },
+  { name: 'Marco Rossi',        role: 'technician',  email: 'm.rossi@mgxmedical.com',    password: 'tecnico123' },
+  { name: 'Sara Colombo',       role: 'secretary',   email: 's.colombo@mgxmedical.com',  password: 'segr123' },
+  { name: 'Client Demo',        role: 'client',      email: 'demo@cliente.it',            password: 'cliente123' },
+]
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('')
@@ -118,9 +125,9 @@ export default function LoginScreen() {
 
           {/* Quick Login Buttons */}
           <div className="grid grid-cols-2 gap-2">
-            {DEMO_USERS.map(user => (
+            {QUICK_LOGIN_ACCOUNTS.map(user => (
               <button
-                key={user.id}
+                key={user.email}
                 onClick={() => handleQuickLogin(user)}
                 disabled={loading}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all text-left disabled:opacity-50"

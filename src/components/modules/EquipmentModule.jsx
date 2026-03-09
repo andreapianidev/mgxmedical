@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
-import { DEMO_USERS } from '../../data/demoData'
 import { differenceInDays, format } from 'date-fns'
 import SectionHeader from '../shared/SectionHeader'
 import SearchBar from '../shared/SearchBar'
@@ -23,7 +22,7 @@ function calibrationAlert(calibrationDue) {
 }
 
 export default function EquipmentModule() {
-  const { equipment, updateEquipment, addEquipment, deleteEquipment, interventions } = useGlobalStore()
+  const { equipment, updateEquipment, addEquipment, deleteEquipment, interventions, users } = useGlobalStore()
   const { addToast } = useToast()
 
   const [search, setSearch] = useState('')
@@ -37,18 +36,18 @@ export default function EquipmentModule() {
   const [addForm, setAddForm] = useState({ code: '', name: '', category: '', calibrationDue: '' })
   const [deleteTarget, setDeleteTarget] = useState(null)
 
-  const technicians = DEMO_USERS.filter(u => u.role === 'technician' || u.role === 'admin')
+  const technicians = useMemo(() => users.filter(u => u.role === 'technician' || u.role === 'admin'), [users])
   const categories = useMemo(() => [...new Set(equipment.map(e => e.category))].sort(), [equipment])
 
   // Enrich with calibration data
   const enriched = useMemo(() =>
     equipment.map(e => {
-      const techUser = e.assignedTo ? DEMO_USERS.find(u => u.id === e.assignedTo) : null
+      const techUser = e.assignedTo ? users.find(u => u.id === e.assignedTo) : null
       const calAlert = calibrationAlert(e.calibrationDue)
       const calDays = e.calibrationDue ? differenceInDays(new Date(e.calibrationDue), new Date()) : null
       return { ...e, techName: techUser?.name || null, calAlert, calDays }
     }),
-    [equipment]
+    [equipment, users]
   )
 
   // KPIs

@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
 import { useToast } from '../../contexts/ToastContext'
-import { DEMO_USERS } from '../../data/demoData'
 import {
   startOfWeek, endOfWeek, eachDayOfInterval, addWeeks,
   format, isSameDay, isToday,
@@ -18,17 +17,18 @@ const SHIFT_TYPES = {
   standby: { label: 'Reperibilita', icon: Moon, color: '#8E44AD', bg: '#F5EEF8' },
   day:     { label: 'Turno diurno', icon: Sun,  color: '#F1C40F', bg: '#FEF9E7' },
 }
-const TECHNICIANS = DEMO_USERS.filter(u => u.role === 'technician')
 
 export default function StandbyModule() {
-  const { shifts, addShift, updateShift, deleteShift } = useGlobalStore()
+  const { shifts, addShift, updateShift, deleteShift, users } = useGlobalStore()
   const { addToast } = useToast()
   const [weekOffset, setWeekOffset] = useState(0)
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingShift, setEditingShift] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const technicians = useMemo(() => users.filter(u => u.role === 'technician'), [users])
+
   const [form, setForm] = useState({
-    techId: TECHNICIANS[0]?.id || '',
+    techId: '',
     shiftType: 'standby',
     date: format(new Date(), 'yyyy-MM-dd'),
     startTime: '08:00',
@@ -50,7 +50,7 @@ export default function StandbyModule() {
     [shifts],
   )
   const onDutyTech = todayShift
-    ? DEMO_USERS.find(u => u.id === todayShift.techId) || {
+    ? users.find(u => u.id === todayShift.techId) || {
         name: todayShift.techName,
         avatar: todayShift.techName?.split(' ').map(w => w[0]).join('').toUpperCase(),
         color: '#2E86C1',
@@ -80,12 +80,12 @@ export default function StandbyModule() {
   const handleFormChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }))
 
   const resetForm = () => {
-    setForm({ techId: TECHNICIANS[0]?.id || '', shiftType: 'standby', date: format(new Date(), 'yyyy-MM-dd'), startTime: '08:00', endTime: '17:00' })
+    setForm({ techId: technicians[0]?.id || '', shiftType: 'standby', date: format(new Date(), 'yyyy-MM-dd'), startTime: '08:00', endTime: '17:00' })
     setEditingShift(null)
   }
 
   const handleSaveShift = async () => {
-    const tech = TECHNICIANS.find(t => t.id === form.techId)
+    const tech = technicians.find(t => t.id === form.techId)
     if (!tech) return
     const shiftData = {
       techId: tech.id, techName: tech.name, shiftType: form.shiftType,
@@ -109,7 +109,7 @@ export default function StandbyModule() {
   const openEditShift = (shift) => {
     setEditingShift(shift)
     setForm({
-      techId: shift.techId || TECHNICIANS[0]?.id || '',
+      techId: shift.techId || technicians[0]?.id || '',
       shiftType: shift.shiftType || 'standby',
       date: shift.shiftDate ? format(new Date(shift.shiftDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       startTime: shift.startTime || '08:00',
@@ -306,7 +306,7 @@ export default function StandbyModule() {
               onChange={e => handleFormChange('techId', e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
-              {TECHNICIANS.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {technicians.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </div>
           <div>

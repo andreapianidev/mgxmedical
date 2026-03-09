@@ -105,18 +105,18 @@ export default function CloudStatusPanel() {
             </div>
             <div>
               <span className="text-xs text-gray-400 block">SLA Uptime</span>
-              <span className="font-semibold text-gray-800">99.97%</span>
+              <span className="font-semibold text-gray-800">99.95%</span>
             </div>
             <div>
               <span className="text-xs text-gray-400 block">Region</span>
               <span className="font-medium text-gray-700 flex items-center gap-1">
-                <Globe size={12} className="text-blue-500" /> EU-West-1 (Milano)
+                <Globe size={12} className="text-blue-500" /> AWS EU-Central-1 (Frankfurt)
               </span>
             </div>
             <div>
               <span className="text-xs text-gray-400 block">Provider</span>
               <span className="font-medium text-gray-700 flex items-center gap-1">
-                <Cloud size={12} className="text-emerald-500" /> Supabase Cloud
+                <Server size={12} className="text-emerald-500" /> Neon PostgreSQL + Vercel
               </span>
             </div>
           </div>

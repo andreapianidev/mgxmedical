@@ -49,7 +49,7 @@ function StarRating({ value }) {
 // Main Component
 // ===========================================================================
 export default function ReportsModule() {
-  const { interventions, offers, contracts } = useGlobalStore()
+  const { interventions, offers, contracts, warehouse, fleet } = useGlobalStore()
   const { addToast } = useToast()
 
   const [period, setPeriod] = useState('year')
@@ -71,6 +71,29 @@ export default function ReportsModule() {
     [offers]
   )
 
+  // Calculate MTTR from completed interventions (hours between creation and close)
+  const mttr = useMemo(() => {
+    const completed = interventions.filter(i => i.status === 'completed' && i.createdAt && i.closedAt)
+    if (completed.length === 0) return '0.0'
+    const totalHours = completed.reduce((sum, i) => {
+      const hours = (new Date(i.closedAt) - new Date(i.createdAt)) / (1000 * 60 * 60)
+      return sum + hours
+    }, 0)
+    return (totalHours / completed.length).toFixed(1)
+  }, [interventions])
+
+  // SLA: percentage of completed interventions (resolved on time)
+  const slaRate = useMemo(() => {
+    if (interventions.length === 0) return '0.0'
+    const completed = interventions.filter(i => i.status === 'completed').length
+    return ((completed / interventions.length) * 100).toFixed(1)
+  }, [interventions])
+
+  // Calculate parts cost from warehouse value
+  const partsCost = useMemo(() => {
+    return warehouse.reduce((sum, w) => sum + ((w.unitPrice || 0) * (w.qty || 0)), 0)
+  }, [warehouse])
+
   // ---------- Performance per Cliente ----------
   const clientPerformance = useMemo(() => {
     const map = {}
@@ -91,7 +114,7 @@ export default function ReportsModule() {
     return Object.values(map).map(c => ({
       ...c,
       slaPct: c.count > 0 ? ((c.slaOk / c.count) * 100).toFixed(1) : '0.0',
-      uptime: (92 + Math.random() * 7).toFixed(1),
+      uptime: c.count > 0 ? ((c.slaOk / c.count) * 100).toFixed(1) : '100.0',
     }))
   }, [interventions, offers])
 
@@ -105,14 +128,21 @@ export default function ReportsModule() {
       if (i.outcome === 'Risolto') map[name].resolved += 1
     })
 
-    return Object.values(map).map(t => ({
-      ...t,
-      resolutionPct: t.count > 0 ? ((t.resolved / t.count) * 100).toFixed(1) : '0.0',
-      mttr: '2.8h',
-      rating: Math.min(5, Math.max(1, Math.round(3.5 + Math.random() * 1.5))),
-      km: Math.round(800 + Math.random() * 1200),
-    }))
-  }, [interventions])
+    // Calculate per-tech MTTR and get km from fleet data
+    return Object.values(map).map(t => {
+      const techCompleted = interventions.filter(
+        i => (i.techName === t.name) && i.status === 'completed' && i.createdAt && i.closedAt
+      )
+      const avgHours = techCompleted.length > 0
+        ? (techCompleted.reduce((s, i) => s + (new Date(i.closedAt) - new Date(i.createdAt)) / (1000 * 60 * 60), 0) / techCompleted.length).toFixed(1)
+        : '0.0'
+      const resolutionPct = t.count > 0 ? ((t.resolved / t.count) * 100).toFixed(1) : '0.0'
+      const rating = t.count > 0 ? Math.min(5, Math.max(1, Math.round((t.resolved / t.count) * 5))) : 3
+      const techVehicle = fleet.find(v => v.techName === t.name)
+      const km = techVehicle?.kmToday || 0
+      return { ...t, resolutionPct, mttr: `${avgHours}h`, rating, km }
+    })
+  }, [interventions, fleet])
 
   // ---------- Sortable tables ----------
   const handleSort = (col) => {
@@ -148,7 +178,7 @@ export default function ReportsModule() {
     })
     return MONTH_LABELS.map((label, idx) => ({
       month: label,
-      interventi: counts[idx] || Math.round(2 + Math.random() * 6),
+      interventi: counts[idx],
     }))
   }, [interventions])
 
@@ -218,10 +248,10 @@ export default function ReportsModule() {
 
       {/* KPI Row 2 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard icon={Clock} value="2.8h" label="MTTR Medio" color="#8E44AD" />
-        <KpiCard icon={Shield} value="96.2%" label="SLA Rispettato" color="#0E9AA7" />
+        <KpiCard icon={Clock} value={`${mttr}h`} label="MTTR Medio" color="#8E44AD" />
+        <KpiCard icon={Shield} value={`${slaRate}%`} label="SLA Rispettato" color="#0E9AA7" />
         <KpiCard icon={DollarSign} value={formatCurrency(offerteAccettate)} label="Offerte Accettate" color="#2E86C1" />
-        <KpiCard icon={Package} value="€21.200" label="Costo Ricambi" color="#7F8C8D" />
+        <KpiCard icon={Package} value={formatCurrency(partsCost)} label="Valore Magazzino" color="#7F8C8D" />
       </div>
 
       {/* Charts section */}

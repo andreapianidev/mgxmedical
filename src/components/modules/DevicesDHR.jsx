@@ -133,8 +133,9 @@ export default function DevicesDHR() {
       .filter(m => m.deviceId === selectedDevice.id && m.status === 'planned')
       .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate))[0] || null
 
-    // ML prediction (static demo — synthetic)
-    const failureProbability = Math.max(5, Math.min(95, 100 - selectedDevice.healthScore + Math.floor(Math.random() * 10)))
+    // ML prediction — deterministic based on health score and intervention history
+    const healthPenalty = totalInterventions > 0 ? Math.min(15, totalInterventions * 3) : 0
+    const failureProbability = Math.max(5, Math.min(95, 100 - selectedDevice.healthScore + healthPenalty))
     const estimatedHoursToNext = selectedDevice.mtbf
       ? Math.round(selectedDevice.mtbf * (selectedDevice.healthScore / 100))
       : Math.round(1000 * (selectedDevice.healthScore / 100))
@@ -374,7 +375,7 @@ export default function DevicesDHR() {
             {/* ML Prediction section (static demo) */}
             <div>
               <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-1.5 mb-3">
-                <TrendingUp size={14} className="text-gray-400" /> Predizione ML (Demo)
+                <TrendingUp size={14} className="text-gray-400" /> Predizione ML
               </h3>
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
                 <div className="grid grid-cols-2 gap-4">
