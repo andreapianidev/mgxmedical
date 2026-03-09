@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from 'react'
+import { useState, useMemo, lazy } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
 import { useToast } from '../../contexts/ToastContext'
 import {
@@ -7,6 +7,7 @@ import {
   WARRANTY_STATUS_OPTIONS,
   TIPOLOGIA_SERVIZIO,
 } from '../../lib/constants'
+import { formatDateTime } from '../../lib/utils'
 import SectionHeader from '../shared/SectionHeader'
 import SearchBar from '../shared/SearchBar'
 import StatusChip from '../shared/StatusChip'
@@ -118,6 +119,9 @@ export default function InterventionsV2() {
   const [search, setSearch] = useState('')
   const [statusTab, setStatusTab] = useState('all')
   const [techFilter, setTechFilter] = useState('')
+
+  // ---- Detail view state ----
+  const [selectedIntervention, setSelectedIntervention] = useState(null)
 
   // ---- Modal state ----
   const [showNewModal, setShowNewModal] = useState(false)
@@ -434,7 +438,7 @@ export default function InterventionsV2() {
             </thead>
             <tbody>
               {filtered.map(intv => (
-                <tr key={intv.id} className="border-b border-gray-50 hover:bg-blue-50/30 transition-colors">
+                <tr key={intv.id} onClick={() => setSelectedIntervention(intv)} className="border-b border-gray-50 hover:bg-blue-50/30 transition-colors cursor-pointer">
                   <td className="px-4 py-3 font-mono font-semibold text-blue-700">{intv.code}</td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-gray-800">{intv.deviceName}</div>
@@ -451,7 +455,7 @@ export default function InterventionsV2() {
                   </td>
                   <td className="px-4 py-3"><StatusChip status={intv.status} /></td>
                   <td className="px-4 py-3"><PriorityPill priority={intv.priority} /></td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-2">
                       {intv.status !== 'completed' && (
                         <button
@@ -870,6 +874,263 @@ export default function InterventionsV2() {
         onSubmitAndPdf={handleCloseAndPdf}
         warehouse={warehouse}
       />
+
+      {/* ================================================================== */}
+      {/* INTERVENTION DETAIL MODAL                                          */}
+      {/* ================================================================== */}
+      <Modal
+        isOpen={!!selectedIntervention}
+        onClose={() => setSelectedIntervention(null)}
+        title={`Intervento ${selectedIntervention?.code || ''}`}
+        subtitle={selectedIntervention?.deviceName}
+        maxWidth="max-w-3xl"
+      >
+        {selectedIntervention && (() => {
+          const intv = selectedIntervention
+          return (
+            <div className="space-y-5">
+              {/* Status + Priority header strip */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <StatusChip status={intv.status} />
+                <PriorityPill priority={intv.priority} />
+                {intv.status !== 'completed' && intv.createdAt && (
+                  <SlaBadge createdAt={intv.createdAt} slaMinutes={intv.slaMinutes} />
+                )}
+              </div>
+
+              {/* Main info grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Left column */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Apparecchiatura</h4>
+                  <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Nome</span>
+                      <span className="font-medium text-gray-800">{intv.deviceName || '-'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Modello / Matricola</span>
+                      <span className="text-gray-700">{intv.deviceSerial || '-'}</span>
+                    </div>
+                    {intv.deviceSoftwareVersion && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Ver. Software</span>
+                        <span className="text-gray-700">{intv.deviceSoftwareVersion}</span>
+                      </div>
+                    )}
+                    {intv.warrantyStatus && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Garanzia</span>
+                        <span className="text-gray-700">
+                          {WARRANTY_STATUS_OPTIONS.find(w => w.value === intv.warrantyStatus)?.label || intv.warrantyStatus}
+                          {intv.warrantyExpiry && ` (fino al ${intv.warrantyExpiry})`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Struttura</h4>
+                  <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Struttura</span>
+                      <span className="font-medium text-gray-800">{intv.structure || '-'}</span>
+                    </div>
+                    {intv.department && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Reparto</span>
+                        <span className="text-gray-700">{intv.department}</span>
+                      </div>
+                    )}
+                    {(intv.address || intv.city) && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Indirizzo</span>
+                        <span className="text-gray-700">{[intv.address, intv.city].filter(Boolean).join(', ')}</span>
+                      </div>
+                    )}
+                    {intv.referent && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Referente</span>
+                        <span className="text-gray-700">{intv.referent}</span>
+                      </div>
+                    )}
+                    {intv.referentEmail && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Email</span>
+                        <span className="text-gray-700">{intv.referentEmail}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right column */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Dettagli Intervento</h4>
+                  <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Tipo</span>
+                      <span className="text-gray-700">{intv.interventionType || '-'}</span>
+                    </div>
+                    {intv.tipologiaServizio && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Tipologia servizio</span>
+                        <span className="text-gray-700">{intv.tipologiaServizio}</span>
+                      </div>
+                    )}
+                    {intv.requestChannel && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Richiesta via</span>
+                        <span className="text-gray-700">{REQUEST_CHANNELS.find(c => c.value === intv.requestChannel)?.label || intv.requestChannel}</span>
+                      </div>
+                    )}
+                    {intv.requestReference && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Rif. richiesta</span>
+                        <span className="text-gray-700">{intv.requestReference}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">SLA</span>
+                      <span className="text-gray-700">{intv.slaMinutes ? `${Math.round(intv.slaMinutes / 60)} ore` : '-'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Tecnico</span>
+                      <span className="font-medium text-gray-800">{intv.techName || 'Non assegnato'}</span>
+                    </div>
+                  </div>
+
+                  {(intv.orderNumber || intv.orderDate) && (
+                    <>
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ordine</h4>
+                      <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+                        {intv.orderNumber && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Nr. Ordine</span>
+                            <span className="text-gray-700">{intv.orderNumber}</span>
+                          </div>
+                        )}
+                        {intv.orderDate && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Data ordine</span>
+                            <span className="text-gray-700">{intv.orderDate}</span>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Date</h4>
+                  <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Creato il</span>
+                      <span className="text-gray-700">{formatDateTime(intv.createdAt) || '-'}</span>
+                    </div>
+                    {intv.closedAt && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Chiuso il</span>
+                        <span className="text-gray-700">{formatDateTime(intv.closedAt)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              {intv.description && (
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Motivazione / Richiesta</h4>
+                  <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 whitespace-pre-wrap">{intv.description}</div>
+                </div>
+              )}
+
+              {/* Outcome & Notes (for completed interventions) */}
+              {intv.status === 'completed' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {intv.outcome && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Esito</h4>
+                      <div className="bg-green-50 rounded-lg p-3 text-sm font-medium text-green-800">{intv.outcome}</div>
+                    </div>
+                  )}
+                  {(intv.healthPre != null || intv.healthPost != null) && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Health Score</h4>
+                      <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Pre-intervento</span>
+                          <span className="text-gray-700">{intv.healthPre != null ? `${intv.healthPre}%` : '-'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Post-intervento</span>
+                          <span className="font-medium text-green-700">{intv.healthPost != null ? `${intv.healthPost}%` : '-'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {intv.notes && (
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Note</h4>
+                  <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 whitespace-pre-wrap">{intv.notes}</div>
+                </div>
+              )}
+
+              {/* Parts used */}
+              {intv.partsUsed && intv.partsUsed.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Ricambi Utilizzati</h4>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-gray-500 text-xs">
+                          <th className="text-left pb-1">Articolo</th>
+                          <th className="text-right pb-1">Qt.</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {intv.partsUsed.map((p, idx) => (
+                          <tr key={idx} className="border-t border-gray-100">
+                            <td className="py-1 text-gray-700">{p.name || p.partName || p.itemName || '-'}</td>
+                            <td className="py-1 text-right text-gray-700">{p.qty || p.quantity || 1}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+                {intv.status !== 'completed' && (
+                  <button
+                    onClick={() => { setSelectedIntervention(null); setShowCloseModal(intv) }}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                  >
+                    <Check size={16} /> Chiudi Intervento
+                  </button>
+                )}
+                {intv.status === 'completed' && (
+                  <button
+                    onClick={() => generatePdf(intv)}
+                    disabled={pdfGenerating}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors disabled:opacity-40"
+                  >
+                    <FileText size={16} /> {pdfGenerating ? 'Generando...' : 'Rapporto PDF'}
+                  </button>
+                )}
+                <button
+                  onClick={() => { setSelectedIntervention(null); openShareModal(intv) }}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                >
+                  <Share2 size={16} /> Condividi
+                </button>
+              </div>
+            </div>
+          )
+        })()}
+      </Modal>
 
       {/* ================================================================== */}
       {/* SHARE MODAL                                                        */}
