@@ -800,7 +800,7 @@ export default function InterventionsV2() {
                 <span className="text-gray-500">Tecnici:</span>
                 <span className="text-gray-700">
                   {selectedTechs.length > 0
-                    ? selectedTechs.map(id => users.find(u => u.id === id)?.name).join(', ')
+                    ? selectedTechs.map(id => users.find(u => u.id === id)?.name).filter(Boolean).join(', ')
                     : 'Nessuno'}
                 </span>
               </div>

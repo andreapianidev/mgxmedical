@@ -122,6 +122,7 @@ export default function WarehouseModuleV2() {
   const closeAdj = () => setAdjModal({ open: false, item: null })
 
   const handleSaveAdj = async () => {
+    if (!adjModal.item) return
     if (!adjNote.trim()) {
       addToast('error', 'La nota di rettifica è obbligatoria.')
       return

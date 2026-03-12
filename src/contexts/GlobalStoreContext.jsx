@@ -168,7 +168,7 @@ export function GlobalStoreProvider({ children }) {
     ))
 
     const intervention = prevInterventions.find(i => i.id === id)
-    if (closeData.healthPost && intervention?.deviceId) {
+    if (closeData.healthPost != null && intervention?.deviceId) {
       setDevices(p => p.map(d =>
         d.id === intervention.deviceId ? { ...d, healthScore: closeData.healthPost } : d
       ))
