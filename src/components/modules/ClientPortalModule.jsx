@@ -217,7 +217,7 @@ export default function ClientPortalModule() {
                           <tr className="bg-gray-50 text-left">
                             <th className="px-4 py-3 font-semibold text-gray-600">Codice</th>
                             <th className="px-4 py-3 font-semibold text-gray-600">Dispositivo</th>
-                            <th className="px-4 py-3 font-semibold text-gray-600 text-center">Priorita</th>
+                            <th className="px-4 py-3 font-semibold text-gray-600 text-center">Priorità</th>
                             <th className="px-4 py-3 font-semibold text-gray-600 text-center">Stato</th>
                             <th className="px-4 py-3 font-semibold text-gray-600">Tecnico</th>
                             <th className="px-4 py-3 font-semibold text-gray-600">Data</th>

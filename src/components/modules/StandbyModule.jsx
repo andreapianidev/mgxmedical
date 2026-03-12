@@ -14,7 +14,7 @@ import { Moon, Sun, Plus, Phone, ChevronLeft, ChevronRight, User, Clock, Edit, T
 // Configuration
 // ---------------------------------------------------------------------------
 const SHIFT_TYPES = {
-  standby: { label: 'Reperibilita', icon: Moon, color: '#8E44AD', bg: '#F5EEF8' },
+  standby: { label: 'Reperibilità', icon: Moon, color: '#8E44AD', bg: '#F5EEF8' },
   day:     { label: 'Turno diurno', icon: Sun,  color: '#F1C40F', bg: '#FEF9E7' },
 }
 
@@ -134,7 +134,7 @@ export default function StandbyModule() {
 
   return (
     <div className="space-y-6">
-      <SectionHeader title="Reperibilita" subtitle="Gestione turni e reperibilita tecnici">
+      <SectionHeader title="Reperibilità" subtitle="Gestione turni e reperibilita tecnici">
         <button
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"

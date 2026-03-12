@@ -17,7 +17,7 @@ import { Calendar, ChevronLeft, ChevronRight, Plus, Edit, Trash2, Clock } from '
 const EVENT_TYPES = {
   intervention: { color: '#3B82F6', label: 'Intervento' },
   pm:           { color: '#22C55E', label: 'Manutenzione Prev.' },
-  standby:      { color: '#A855F7', label: 'Reperibilita' },
+  standby:      { color: '#A855F7', label: 'Reperibilità' },
   alert:        { color: '#EF4444', label: 'Allerta' },
   other:        { color: '#94A3B8', label: 'Altro' },
 }

@@ -327,7 +327,7 @@ export default function FleetModule() {
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Priorita</span>
+                <span className="text-xs text-gray-500">Priorità</span>
                 <PriorityPill priority={navModal.intervention.priority} />
               </div>
             </div>

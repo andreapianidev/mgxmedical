@@ -247,11 +247,11 @@ export default function InterventionsV2() {
   const buildMailtoNew = () => {
     const subject = encodeURIComponent(`Nuovo Intervento - ${form.deviceName}`)
     const body = encodeURIComponent(
-      `Buongiorno,\n\nE' stato creato un nuovo intervento:\n` +
+      `Buongiorno,\n\nÈ stato creato un nuovo intervento:\n` +
       `- Apparecchiatura: ${form.deviceName}\n` +
       `- Struttura: ${form.structure} / ${form.department}\n` +
       `- Tipo: ${form.interventionType}\n` +
-      `- Priorita: ${form.priority}\n` +
+      `- Priorità: ${form.priority}\n` +
       `- SLA: ${form.slaHours} ore\n` +
       `- Descrizione: ${form.description}\n\nCordiali saluti,\nMGX Medical`
     )
@@ -264,7 +264,7 @@ export default function InterventionsV2() {
       `Apparecchiatura: ${form.deviceName}\n` +
       `Struttura: ${form.structure} / ${form.department}\n` +
       `Tipo: ${form.interventionType}\n` +
-      `Priorita: ${form.priority}\n` +
+      `Priorità: ${form.priority}\n` +
       `SLA: ${form.slaHours} ore\n` +
       `Descrizione: ${form.description}`
     )
@@ -432,7 +432,7 @@ export default function InterventionsV2() {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Tecnico</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">SLA</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Stato</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Priorita</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Priorità</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-600">Azioni</th>
               </tr>
             </thead>
@@ -502,7 +502,7 @@ export default function InterventionsV2() {
           <div className="space-y-4">
             {/* Priority selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Priorita</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Priorità</label>
               <div className="flex gap-2">
                 {PRIORITY_OPTIONS.map(opt => (
                   <button
@@ -739,7 +739,7 @@ export default function InterventionsV2() {
 
             <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">Priorita:</span>
+                <span className="text-gray-500">Priorità:</span>
                 <PriorityPill priority={form.priority} />
               </div>
               <div className="flex justify-between">

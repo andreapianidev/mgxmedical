@@ -194,7 +194,7 @@ export default function ReportsModule() {
 
   // ---------- Export CSV ----------
   const handleExportCSV = () => {
-    const header = 'Codice,Apparecchiatura,Struttura,Tecnico,Stato,Esito,Priorita,Data Creazione\n'
+    const header = 'Codice,Apparecchiatura,Struttura,Tecnico,Stato,Esito,Priorità,Data Creazione\n'
     const rows = interventions.map(i =>
       `${i.code},${i.deviceName},${i.structure},${i.techName},${i.status},${i.outcome || '-'},${i.priority},${i.createdAt || '-'}`
     ).join('\n')

@@ -195,7 +195,7 @@ export default function MLEngineModule() {
         return (
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
             <span className="text-gray-500">R² Efficienza</span><span className="text-right font-semibold text-gray-800">{model.r2_efficiency}</span>
-            <span className="text-gray-500">R² Qualita</span><span className="text-right font-semibold text-gray-800">{model.r2_quality}</span>
+            <span className="text-gray-500">R² Qualità</span><span className="text-right font-semibold text-gray-800">{model.r2_quality}</span>
           </div>
         )
       case 'Fleet Optimization':

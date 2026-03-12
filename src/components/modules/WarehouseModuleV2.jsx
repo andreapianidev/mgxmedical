@@ -245,7 +245,7 @@ export default function WarehouseModuleV2() {
                         <button onClick={() => openEdit(w)} title="Modifica" className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 hover:text-blue-600">
                           <Edit size={15} />
                         </button>
-                        <button onClick={() => openAdj(w)} title="Rettifica quantita" className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 hover:text-orange-600">
+                        <button onClick={() => openAdj(w)} title="Rettifica quantità" className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 hover:text-orange-600">
                           <RotateCcw size={15} />
                         </button>
                         <button onClick={() => setDeleteTarget(w)} title="Elimina" className="p-1.5 rounded-lg hover:bg-red-50 transition-colors text-gray-500 hover:text-red-500">
@@ -343,7 +343,7 @@ export default function WarehouseModuleV2() {
             <span className="text-lg font-bold text-gray-800">{adjModal.item?.qty}</span>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nuova quantita</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nuova quantità</label>
             <input type="number" min={0} value={adjQty} onChange={e => setAdjQty(Number(e.target.value))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
           </div>
           <div>

@@ -92,44 +92,4 @@ export function calcSlaRemaining(createdAt, slaMinutes) {
   return { minutesLeft, percentage, level }
 }
 
-// ─── Health Score ────────────────────────────────────────────────────────────
-
-/**
- * Return a traffic-light color based on a health score (0-100).
- * @param {number} score
- * @returns {'green'|'yellow'|'red'}
- */
-export function getHealthColor(score) {
-  if (score >= 80) return 'green'
-  if (score >= 50) return 'yellow'
-  return 'red'
-}
-
-// ─── Debounce ────────────────────────────────────────────────────────────────
-
-/**
- * Classic debounce: delays invoking `fn` until `ms` milliseconds have passed
- * since the last call.
- * @param {Function} fn
- * @param {number} ms
- * @returns {Function}
- */
-export function debounce(fn, ms = 300) {
-  let timer
-  return function (...args) {
-    clearTimeout(timer)
-    timer = setTimeout(() => fn.apply(this, args), ms)
-  }
-}
-
-// ─── Class Names Utility ─────────────────────────────────────────────────────
-
-/**
- * Lightweight classnames utility. Joins truthy class strings.
- * @param  {...(string|false|null|undefined)} classes
- * @returns {string}
- */
-export function cn(...classes) {
-  return classes.filter(Boolean).join(' ')
-}
 

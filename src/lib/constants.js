@@ -163,30 +163,6 @@ export const CHECKLIST_ITEMS = [
   { key: 'prove_funzionamento', label: 'Prove di Funzionamento' },
 ]
 
-export const MDR_CATEGORIES = [
-  'Diagnostica',
-  'Terapeutica',
-  'Monitoraggio',
-  'Laboratorio',
-  'Altro',
-]
-
-export const MDR_CLASSES = ['I', 'IIa', 'IIb', 'III']
-
-export const DEVICE_STATUSES = [
-  'operative',
-  'standby',
-  'maintenance',
-  'decommissioned',
-]
-
-export const DEVICE_STATUS_LABELS = {
-  operative: 'Operativo',
-  standby: 'Standby',
-  maintenance: 'In Manutenzione',
-  decommissioned: 'Dismesso',
-}
-
 // ─── Warranty Levels ─────────────────────────────────────────────────────────
 
 export const WARRANTY_LEVELS = {

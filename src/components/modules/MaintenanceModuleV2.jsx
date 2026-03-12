@@ -329,7 +329,7 @@ export default function MaintenanceModuleV2() {
                 value={completeNotes}
                 onChange={e => setCompleteNotes(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
-                placeholder="Descrivi le attivita eseguite durante la manutenzione..."
+                placeholder="Descrivi le attività eseguite durante la manutenzione..."
               />
             </div>
 

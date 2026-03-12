@@ -241,7 +241,7 @@ export default function CloudStatusPanel() {
         </h2>
         <div className="max-h-[360px] overflow-y-auto -mx-1 px-1 space-y-2">
           {recentLogs.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-6">Nessuna attivita registrata</p>
+            <p className="text-xs text-gray-400 text-center py-6">Nessuna attività registrata</p>
           ) : (
             recentLogs.map((entry) => (
               <div key={entry.id} className="flex items-start gap-3 bg-gray-50 rounded-lg px-3 py-2.5">
