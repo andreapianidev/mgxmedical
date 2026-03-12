@@ -538,27 +538,39 @@ export function GlobalStoreProvider({ children }) {
   }, [])
 
   const markNotificationRead = useCallback(async (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n))
+    const prev = notificationsRef.current
+    setNotifications(p => p.map(n => n.id === id ? { ...n, isRead: true } : n))
     try {
       await api.put(`/notifications/${id}`, { isRead: true })
-    } catch (e) { console.warn('Failed to mark notification read:', e) }
+    } catch (e) {
+      console.warn('Failed to mark notification read:', e)
+      setNotifications(prev)
+    }
   }, [])
 
   const markAllNotificationsRead = useCallback(async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+    const prev = notificationsRef.current
+    setNotifications(p => p.map(n => ({ ...n, isRead: true })))
     try {
       await api.post('/notifications/mark-all-read')
-    } catch (e) { console.warn('Failed to mark all notifications read:', e) }
+    } catch (e) {
+      console.warn('Failed to mark all notifications read:', e)
+      setNotifications(prev)
+    }
   }, [])
 
   const toggleNotificationPin = useCallback(async (id) => {
     const notif = notificationsRef.current.find(n => n.id === id)
     if (!notif) return
+    const prev = notificationsRef.current
     const newPinned = !notif.isPinned
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isPinned: newPinned } : n))
+    setNotifications(p => p.map(n => n.id === id ? { ...n, isPinned: newPinned } : n))
     try {
       await api.put(`/notifications/${id}`, { isPinned: newPinned })
-    } catch (e) { console.warn('Failed to toggle notification pin:', e) }
+    } catch (e) {
+      console.warn('Failed to toggle notification pin:', e)
+      setNotifications(prev)
+    }
   }, [])
 
   const deleteNotification = useCallback(async (id) => {

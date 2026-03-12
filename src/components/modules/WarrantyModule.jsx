@@ -80,7 +80,7 @@ export default function WarrantyModule() {
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter(d =>
-        d.name.toLowerCase().includes(q) ||
+        (d.name || '').toLowerCase().includes(q) ||
         d.serialNumber?.toLowerCase().includes(q) ||
         d.client?.toLowerCase().includes(q)
       )
