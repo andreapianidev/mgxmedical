@@ -556,9 +556,9 @@ export default function InterventionsV2() {
                   className={inputCls} placeholder="Indirizzo" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Citta</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Città</label>
                 <input type="text" value={form.city} onChange={e => updateForm('city', e.target.value)}
-                  className={inputCls} placeholder="Citta" />
+                  className={inputCls} placeholder="Città" />
               </div>
             </div>
 
