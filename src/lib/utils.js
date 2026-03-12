@@ -1,6 +1,5 @@
-import { format, differenceInDays, differenceInMinutes } from 'date-fns'
+import { format } from 'date-fns'
 import { it } from 'date-fns/locale'
-import { WARRANTY_LEVELS } from './constants'
 
 // ─── Date Formatting ─────────────────────────────────────────────────────────
 
@@ -40,56 +39,3 @@ export function formatCurrency(amount) {
     currency: 'EUR',
   }).format(amount)
 }
-
-// ─── Warranty ────────────────────────────────────────────────────────────────
-
-/**
- * Calculate warranty level based on the end date.
- * @param {string|Date} warrantyEndDate
- * @returns {{ daysLeft: number, level: object }}
- */
-export function getWarrantyLevel(warrantyEndDate) {
-  if (!warrantyEndDate) return { daysLeft: 0, level: WARRANTY_LEVELS.EXPIRED }
-
-  const daysLeft = differenceInDays(new Date(warrantyEndDate), new Date())
-
-  if (WARRANTY_LEVELS.EXPIRED.condition(daysLeft)) {
-    return { daysLeft, level: WARRANTY_LEVELS.EXPIRED }
-  }
-  if (WARRANTY_LEVELS.CRITICAL.condition(daysLeft)) {
-    return { daysLeft, level: WARRANTY_LEVELS.CRITICAL }
-  }
-  if (WARRANTY_LEVELS.WARNING.condition(daysLeft)) {
-    return { daysLeft, level: WARRANTY_LEVELS.WARNING }
-  }
-  return { daysLeft, level: WARRANTY_LEVELS.OK }
-}
-
-// ─── SLA ─────────────────────────────────────────────────────────────────────
-
-/**
- * Calculate remaining SLA time and return status.
- * @param {string|Date} createdAt  - when the intervention was created
- * @param {number} slaMinutes      - total SLA budget in minutes
- * @returns {{ minutesLeft: number, percentage: number, level: 'green'|'yellow'|'red' }}
- */
-export function calcSlaRemaining(createdAt, slaMinutes) {
-  if (!createdAt || !slaMinutes) {
-    return { minutesLeft: 0, percentage: 0, level: 'red' }
-  }
-
-  const elapsed = differenceInMinutes(new Date(), new Date(createdAt))
-  const minutesLeft = Math.max(slaMinutes - elapsed, 0)
-  const percentage = Math.round((minutesLeft / slaMinutes) * 100)
-
-  let level = 'green'
-  if (percentage <= 25) {
-    level = 'red'
-  } else if (percentage <= 50) {
-    level = 'yellow'
-  }
-
-  return { minutesLeft, percentage, level }
-}
-
-

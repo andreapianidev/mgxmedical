@@ -163,35 +163,6 @@ export const CHECKLIST_ITEMS = [
   { key: 'prove_funzionamento', label: 'Prove di Funzionamento' },
 ]
 
-// ─── Warranty Levels ─────────────────────────────────────────────────────────
-
-export const WARRANTY_LEVELS = {
-  EXPIRED: {
-    color: '#C0392B',
-    bg: '#FADBD8',
-    label: 'SCADUTA',
-    condition: (daysLeft) => daysLeft < 0,
-  },
-  CRITICAL: {
-    color: '#E67E22',
-    bg: '#FDEBD0',
-    label: 'CRITICA',
-    condition: (daysLeft) => daysLeft <= 30,
-  },
-  WARNING: {
-    color: '#F1C40F',
-    bg: '#FEF9E7',
-    label: 'WARNING',
-    condition: (daysLeft) => daysLeft <= 90,
-  },
-  OK: {
-    color: '#27AE60',
-    bg: '#D5F5E3',
-    label: 'VALIDA',
-    condition: (daysLeft) => daysLeft > 90,
-  },
-}
-
 // ─── Navigation Items ────────────────────────────────────────────────────────
 
 const ALL_ROLES = [ROLES.ADMIN, ROLES.TECHNICIAN, ROLES.SECRETARY, ROLES.CLIENT]

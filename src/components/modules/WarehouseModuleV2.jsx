@@ -9,7 +9,7 @@ import KpiCard from '../shared/KpiCard'
 import Modal from '../shared/Modal'
 import EmptyState from '../shared/EmptyState'
 import StatusChip from '../shared/StatusChip'
-import { Package, Plus, Edit, AlertTriangle, AlertCircle, DollarSign, Minus, RotateCcw, Info, Trash2 } from 'lucide-react'
+import { Package, Plus, Edit, AlertTriangle, AlertCircle, DollarSign, RotateCcw, Info, Trash2 } from 'lucide-react'
 
 const CATEGORIES = ['Tutti', 'Batterie', 'Guarnizioni', 'Filtri', 'Kit', 'Elettronica', 'Meccanica']
 const STATUS_TABS = ['Tutti', 'Disponibile', 'Scorta Bassa', 'Esaurito']
