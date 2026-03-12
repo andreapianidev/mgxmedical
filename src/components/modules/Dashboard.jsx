@@ -260,7 +260,7 @@ export default function Dashboard() {
                     className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap"
                     style={{ backgroundColor: badge.bg, color: badge.color }}
                   >
-                    {d.daysRemaining < 0 ? badge.label : badge.label}
+                    {badge.label}
                   </span>
                 </div>
               )

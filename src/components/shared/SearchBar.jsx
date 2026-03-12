@@ -6,6 +6,7 @@ const SearchBar = React.memo(function SearchBar({ value, onChange, placeholder =
   const timerRef = useRef(null)
 
   useEffect(() => { setLocal(value || '') }, [value])
+  useEffect(() => { return () => clearTimeout(timerRef.current) }, [])
 
   const handleChange = (e) => {
     const v = e.target.value

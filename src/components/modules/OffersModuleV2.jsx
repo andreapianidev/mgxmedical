@@ -10,7 +10,7 @@ import Modal from '../shared/Modal'
 import EmptyState from '../shared/EmptyState'
 import {
   FileText, Plus, Send, CheckCircle2,
-  AlertTriangle, Mail, Eye, DollarSign, XCircle, Trash2,
+  AlertTriangle, Mail, Eye, XCircle, Trash2,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------

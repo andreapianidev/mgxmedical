@@ -340,7 +340,7 @@ export default function WarrantyModule() {
                   <p className="text-xs text-gray-400">{d.serialNumber} — {d.client}</p>
                 </div>
                 <span className="text-xs font-bold" style={{ color: daysColor(d.daysLeft) }}>
-                  {d.daysLeft < 0 ? `${d.daysLeft}gg` : `${d.daysLeft}gg`}
+                  {d.daysLeft < 0 ? `${Math.abs(d.daysLeft)}gg scaduta` : `+${d.daysLeft}gg`}
                 </span>
               </label>
             ))}
