@@ -134,7 +134,7 @@ export default function StandbyModule() {
 
   return (
     <div className="space-y-6">
-      <SectionHeader title="Reperibilità" subtitle="Gestione turni e reperibilita tecnici">
+      <SectionHeader title="Reperibilità" subtitle="Gestione turni e reperibilità tecnici">
         <button
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"

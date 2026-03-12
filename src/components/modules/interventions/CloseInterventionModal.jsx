@@ -234,8 +234,8 @@ export default function CloseInterventionModal({ intervention, isOpen, onClose, 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { key: 'repairInLab', label: 'Riparazione in laboratorio' },
-            { key: 'needsTransfer', label: 'Necessita trasferimenti' },
-            { key: 'needsSpareParts', label: 'Necessita ricambi' },
+            { key: 'needsTransfer', label: 'Necessità trasferimenti' },
+            { key: 'needsSpareParts', label: 'Necessità ricambi' },
           ].map(({ key, label }) => (
             <label key={key} className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors
               ${form[key] ? 'border-orange-300 bg-orange-50' : 'border-gray-200 hover:border-gray-300'}`}>

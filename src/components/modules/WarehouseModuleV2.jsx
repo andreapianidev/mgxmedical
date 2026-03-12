@@ -294,7 +294,7 @@ export default function WarehouseModuleV2() {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Quantita</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Quantità</label>
               <input type="number" min={0} value={form.qty} onChange={e => updateField('qty', Number(e.target.value))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
             </div>
             <div>
@@ -336,10 +336,10 @@ export default function WarehouseModuleV2() {
       </Modal>
 
       {/* Adjustment Modal */}
-      <Modal isOpen={adjModal.open} onClose={closeAdj} title="Rettifica Quantita" subtitle={adjModal.item ? `${adjModal.item.code} — ${adjModal.item.name}` : ''}>
+      <Modal isOpen={adjModal.open} onClose={closeAdj} title="Rettifica Quantità" subtitle={adjModal.item ? `${adjModal.item.code} — ${adjModal.item.name}` : ''}>
         <div className="space-y-4">
           <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
-            <span className="text-sm text-gray-600">Quantita attuale</span>
+            <span className="text-sm text-gray-600">Quantità attuale</span>
             <span className="text-lg font-bold text-gray-800">{adjModal.item?.qty}</span>
           </div>
           <div>

@@ -274,7 +274,7 @@ export default function InterventionPdfReport({ intervention }) {
           </View>
           <View style={s.row}>
             <FieldCell label="Via" value={i.address} />
-            <FieldCell label="Citta" value={i.city} width="30%" />
+            <FieldCell label="Città" value={i.city} width="30%" />
           </View>
           <View style={s.row}>
             <FieldCell label="Referente" value={i.referent} />
@@ -364,8 +364,8 @@ export default function InterventionPdfReport({ intervention }) {
         <View style={[s.tableBox, { padding: 4 }]}>
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <Checkbox checked={!!i.repairInLab} label="Riparazione in laboratorio" />
-            <Checkbox checked={!!i.needsTransfer} label="Necessita trasferimenti" />
-            <Checkbox checked={!!i.needsSpareParts} label="Necessita ricambi" />
+            <Checkbox checked={!!i.needsTransfer} label="Necessità trasferimenti" />
+            <Checkbox checked={!!i.needsSpareParts} label="Necessità ricambi" />
           </View>
         </View>
 

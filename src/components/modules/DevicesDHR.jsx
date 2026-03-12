@@ -166,7 +166,7 @@ export default function DevicesDHR() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <SectionHeader title="Dispositivi DHR" subtitle="Device History Record — Tracciabilita ISO 13485" />
+      <SectionHeader title="Dispositivi DHR" subtitle="Device History Record — Tracciabilità ISO 13485" />
 
       {/* Search + Filters */}
       <SearchBar value={search} onChange={setSearch} placeholder="Cerca dispositivo, seriale, marca, cliente..." className="w-full" />
