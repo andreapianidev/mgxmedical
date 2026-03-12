@@ -26,8 +26,8 @@ export default async function handler(req, res) {
     const b = req.body || {};
     try {
       const rows = await sql`
-        INSERT INTO equipment (tenant_id, code, name, category, status, assigned_to, calibration_due)
-        VALUES (${user.tenantId}, ${b.code}, ${b.name}, ${b.category || null}, ${b.status || 'available'}, ${b.assignedTo || null}, ${b.calibrationDue || null})
+        INSERT INTO equipment (tenant_id, code, name, category, status, assigned_to, calibration_due, last_used)
+        VALUES (${user.tenantId}, ${b.code}, ${b.name}, ${b.category || null}, ${b.status || 'available'}, ${b.assignedTo || null}, ${b.calibrationDue || null}, ${b.lastUsed || null})
         RETURNING *
       `;
       return res.status(201).json(toCamel(rows[0]));

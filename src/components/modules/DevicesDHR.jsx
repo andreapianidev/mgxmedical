@@ -114,10 +114,11 @@ export default function DevicesDHR() {
       }
     })
     // Add current health as last point
+    const now = Date.now()
     chartData.push({
       date: 'Oggi',
       health: selectedDevice.healthScore,
-      ts: Date.now(),
+      ts: now,
     })
     // Sort by timestamp
     chartData.sort((a, b) => a.ts - b.ts)

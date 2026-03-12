@@ -1,4 +1,3 @@
-import React from 'react'
 import { Inbox } from 'lucide-react'
 
 export default function EmptyState({ icon: Icon = Inbox, message = 'Nessun risultato', description, action }) {

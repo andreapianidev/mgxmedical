@@ -55,12 +55,15 @@ export default function MLEngineModule() {
   const { devices, interventions, addNotification } = useGlobalStore()
 
   // --- ML Models (static metadata — real ML pipeline config) ---
-  const models = [
-    { name: 'Predictive Maintenance', type: 'LSTM + TCN + Random Forest', accuracy: 87.3, precision: 85.1, recall: 89.2, f1: 87.1, lastTrained: new Date(Date.now() - 86400000 * 3).toISOString() },
-    { name: 'Demand Forecasting',     type: 'Prophet + ARIMA',           mape: 11.2,                                                lastTrained: new Date(Date.now() - 86400000 * 7).toISOString() },
-    { name: 'Technician Performance', type: 'XGBoost Regressor',         r2_efficiency: 0.91, r2_quality: 0.88,                     lastTrained: new Date(Date.now() - 86400000 * 5).toISOString() },
-    { name: 'Fleet Optimization',     type: 'Bayesian Network',          accuracy: 92.1,                                            lastTrained: new Date(Date.now() - 86400000 * 2).toISOString() },
-  ]
+  const models = useMemo(() => {
+    const now = Date.now()
+    return [
+      { name: 'Predictive Maintenance', type: 'LSTM + TCN + Random Forest', accuracy: 87.3, precision: 85.1, recall: 89.2, f1: 87.1, lastTrained: new Date(now - 86400000 * 3).toISOString() },
+      { name: 'Demand Forecasting',     type: 'Prophet + ARIMA',           mape: 11.2,                                                lastTrained: new Date(now - 86400000 * 7).toISOString() },
+      { name: 'Technician Performance', type: 'XGBoost Regressor',         r2_efficiency: 0.91, r2_quality: 0.88,                     lastTrained: new Date(now - 86400000 * 5).toISOString() },
+      { name: 'Fleet Optimization',     type: 'Bayesian Network',          accuracy: 92.1,                                            lastTrained: new Date(now - 86400000 * 2).toISOString() },
+    ]
+  }, [])
 
   // --- Generate device predictions from real data ---
   const devicePredictions = useMemo(() => {
@@ -97,8 +100,6 @@ export default function MLEngineModule() {
 
   // --- Weekly forecast from real interventions ---
   const weeklyForecast = useMemo(() => {
-    const now = new Date()
-    const dayOfWeek = (now.getDay() + 6) % 7 // Mon=0
     return DAYS.map((_, i) => {
       // Count interventions created on same day-of-week in past data
       const count = interventions.filter(int => {

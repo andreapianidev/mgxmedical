@@ -49,7 +49,7 @@ function StarRating({ value }) {
 // Main Component
 // ===========================================================================
 export default function ReportsModule() {
-  const { interventions, offers, contracts, warehouse, fleet } = useGlobalStore()
+  const { interventions, offers, warehouse, fleet } = useGlobalStore()
   const { addToast } = useToast()
 
   const [period, setPeriod] = useState('year')
@@ -204,7 +204,7 @@ export default function ReportsModule() {
   }
 
   // ---------- Sort indicator ----------
-  const SortIcon = ({ col }) => {
+  const sortIcon = (col) => {
     if (sortCol !== col) return <span className="text-gray-300 ml-1">&#8597;</span>
     return <span className="ml-1 text-blue-600">{sortDir === 'asc' ? '&#9650;' : '&#9660;'}</span>
   }
@@ -310,19 +310,19 @@ export default function ReportsModule() {
               <thead>
                 <tr className="bg-gray-50/60 border-b border-gray-100">
                   <th className="text-left px-4 py-3 font-semibold text-gray-600 cursor-pointer select-none" onClick={() => handleSort('client')}>
-                    Cliente <SortIcon col="client" />
+                    Cliente {sortIcon('client')}
                   </th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-600 cursor-pointer select-none" onClick={() => handleSort('count')}>
-                    Interventi <SortIcon col="count" />
+                    Interventi {sortIcon('count')}
                   </th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-600 cursor-pointer select-none" onClick={() => handleSort('slaPct')}>
-                    SLA Compliance % <SortIcon col="slaPct" />
+                    SLA Compliance % {sortIcon('slaPct')}
                   </th>
                   <th className="text-right px-4 py-3 font-semibold text-gray-600 cursor-pointer select-none" onClick={() => handleSort('spend')}>
-                    Spesa Totale <SortIcon col="spend" />
+                    Spesa Totale {sortIcon('spend')}
                   </th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-600 cursor-pointer select-none" onClick={() => handleSort('uptime')}>
-                    Uptime % <SortIcon col="uptime" />
+                    Uptime % {sortIcon('uptime')}
                   </th>
                 </tr>
               </thead>

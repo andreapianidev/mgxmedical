@@ -563,7 +563,7 @@ export function GlobalStoreProvider({ children }) {
     setNotifications(p => p.filter(n => n.id !== id))
     try {
       await api.delete(`/notifications/${id}`)
-    } catch (err) {
+    } catch {
       setNotifications(prev)
     }
   }, [])

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
 import { useToast } from '../../contexts/ToastContext'
-import { formatDate, formatCurrency } from '../../lib/utils'
+import { formatDate } from '../../lib/utils'
 import SectionHeader from '../shared/SectionHeader'
 import KpiCard from '../shared/KpiCard'
 import StatusChip from '../shared/StatusChip'

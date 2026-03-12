@@ -225,7 +225,6 @@ const formatCurrency = (amount) => {
 export default function InterventionPdfReport({ intervention }) {
   const i = intervention
   const reqChannel = REQUEST_CHANNELS.find(r => r.value === i.requestChannel)?.label || i.requestChannel || ''
-  const warStatus = WARRANTY_STATUS_OPTIONS.find(w => w.value === i.warrantyStatus)?.label || i.warrantyStatus || ''
   const parts = i.partsUsed || []
   const sessions = i.workSessions || []
   const checklist = i.checklistVerifiche || {}

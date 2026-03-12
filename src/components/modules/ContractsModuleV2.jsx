@@ -23,7 +23,7 @@ const emptyContract = {
   code: '', client: '', contact: '', email: '',
   contractType: 'Full Service', value: 0,
   startDate: '', endDate: '',
-  slaResponse: '', slaResolution: '',
+  slaResponseHours: '', slaResolutionHours: '',
   devicesCount: 0, coveredCategories: [], status: 'active',
 }
 
@@ -100,6 +100,8 @@ export default function ContractsModuleV2() {
       ...form,
       value: Number(form.value),
       devicesCount: Number(form.devicesCount),
+      slaResponseHours: form.slaResponseHours ? Number(form.slaResponseHours) : null,
+      slaResolutionHours: form.slaResolutionHours ? Number(form.slaResolutionHours) : null,
       startDate: form.startDate ? new Date(form.startDate).toISOString() : '',
       endDate: form.endDate ? new Date(form.endDate).toISOString() : '',
     }
@@ -204,8 +206,8 @@ export default function ContractsModuleV2() {
                     <td className="px-4 py-3 text-gray-500">{formatDate(c.startDate)}</td>
                     <td className="px-4 py-3 text-gray-500">{formatDate(c.endDate)}</td>
                     <td className="px-4 py-3 text-xs text-gray-500">
-                      <span className="block">{c.slaResponse || '-'}</span>
-                      <span className="block text-gray-400">{c.slaResolution || '-'}</span>
+                      <span className="block">{c.slaResponseHours ? `${c.slaResponseHours}h` : '-'}</span>
+                      <span className="block text-gray-400">{c.slaResolutionHours ? `${c.slaResolutionHours}h` : '-'}</span>
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700 font-medium">{c.devicesCount}</td>
                     <td className="px-4 py-3 text-center"><StatusChip status={c.status} /></td>
@@ -270,8 +272,8 @@ export default function ContractsModuleV2() {
 
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-500 mb-1">SLA</p>
-                <p className="text-sm text-gray-700"><span className="font-medium">Risposta:</span> {c.slaResponse || '-'}</p>
-                <p className="text-sm text-gray-700"><span className="font-medium">Risoluzione:</span> {c.slaResolution || '-'}</p>
+                <p className="text-sm text-gray-700"><span className="font-medium">Risposta:</span> {c.slaResponseHours ? `${c.slaResponseHours} ore` : '-'}</p>
+                <p className="text-sm text-gray-700"><span className="font-medium">Risoluzione:</span> {c.slaResolutionHours ? `${c.slaResolutionHours} ore` : '-'}</p>
               </div>
 
               <div className="bg-gray-50 rounded-lg p-3">
@@ -357,12 +359,12 @@ export default function ContractsModuleV2() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">SLA Risposta</label>
-              <input value={form.slaResponse} onChange={e => updateField('slaResponse', e.target.value)} placeholder="es. 2 ore (CRITICO)" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">SLA Risposta (ore)</label>
+              <input type="number" min={0} value={form.slaResponseHours} onChange={e => updateField('slaResponseHours', e.target.value)} placeholder="es. 2" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">SLA Risoluzione</label>
-              <input value={form.slaResolution} onChange={e => updateField('slaResolution', e.target.value)} placeholder="es. 8 ore (CRITICO)" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">SLA Risoluzione (ore)</label>
+              <input type="number" min={0} value={form.slaResolutionHours} onChange={e => updateField('slaResolutionHours', e.target.value)} placeholder="es. 8" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

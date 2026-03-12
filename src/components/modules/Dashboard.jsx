@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
-import { useAuth } from '../../contexts/AuthContext'
 import KpiCard from '../shared/KpiCard'
 import StatusChip from '../shared/StatusChip'
 import PriorityPill from '../shared/PriorityPill'
@@ -15,7 +14,6 @@ import { differenceInDays } from 'date-fns'
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { user } = useAuth()
   const { interventions, devices, notifications, schedMaint, updateIntervention, fleet } = useGlobalStore()
 
   const [searchQuery, setSearchQuery] = useState('')

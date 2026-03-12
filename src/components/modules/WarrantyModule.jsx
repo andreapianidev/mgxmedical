@@ -69,7 +69,10 @@ export default function WarrantyModule() {
   // Filter logic
   const filtered = useMemo(() => {
     let list = warrantyData
-    if (filterLevel !== 'Tutte') list = list.filter(d => d.alertLevel === filterLevel.toUpperCase())
+    if (filterLevel !== 'Tutte') {
+      const level = tabMap[filterLevel] || filterLevel
+      list = list.filter(d => d.alertLevel === level)
+    }
     if (filterClient) list = list.filter(d => d.client === filterClient)
     if (search.trim()) {
       const q = search.toLowerCase()
@@ -174,7 +177,7 @@ export default function WarrantyModule() {
               key={t}
               onClick={() => setFilterLevel(t === 'Tutte' ? 'Tutte' : t)}
               className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors ${
-                filterLevel === t || (t !== 'Tutte' && filterLevel === tabMap[t])
+                filterLevel === t
                   ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >

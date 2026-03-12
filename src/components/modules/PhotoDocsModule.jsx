@@ -18,7 +18,7 @@ const PHASE_COLORS = {
 const PHASE_TABS = ['Tutte', 'PRE', 'DURANTE', 'POST', 'DOCUMENTI']
 
 export default function PhotoDocsModule() {
-  const { attachments, interventions, addAttachment } = useGlobalStore()
+  const { attachments, interventions } = useGlobalStore()
 
   const [search, setSearch] = useState('')
   const [selectedIntId, setSelectedIntId] = useState(null)
