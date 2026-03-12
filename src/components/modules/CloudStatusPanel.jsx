@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
 import { useOnlineUsers } from '../../hooks/useOnlineUsers'
@@ -12,8 +12,7 @@ import {
 // ---------------------------------------------------------------------------
 // Static constants
 // ---------------------------------------------------------------------------
-const TENANT_ID = 'a3f8e1c4-7b2d-4e9a-b6f0-1d2c3e4f5a6b'
-const SESSION_ID = 'e9c2a7f41b03'
+const TENANT_ID = '00000000-0000-0000-0000-000000000001'
 
 const CHANNELS = [
   { name: 'interventions', label: 'Interventi' },
@@ -54,6 +53,8 @@ export default function CloudStatusPanel() {
   const { user } = useAuth()
   const { activityLog } = useGlobalStore()
   const onlineUsers = useOnlineUsers()
+
+  const sessionId = useMemo(() => crypto.randomUUID().slice(0, 12), [])
 
   // Simulated last-sync timestamp that updates every 8 seconds
   const [lastSync, setLastSync] = useState(new Date())
@@ -101,7 +102,7 @@ export default function CloudStatusPanel() {
             </div>
             <div>
               <span className="text-xs text-gray-400 block">Session ID</span>
-              <span className="font-mono text-xs text-gray-700">{SESSION_ID}...</span>
+              <span className="font-mono text-xs text-gray-700">{sessionId}...</span>
             </div>
             <div>
               <span className="text-xs text-gray-400 block">SLA Uptime</span>

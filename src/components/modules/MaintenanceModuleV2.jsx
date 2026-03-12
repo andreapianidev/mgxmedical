@@ -100,9 +100,13 @@ export default function MaintenanceModuleV2() {
     setCompleteModal(item)
   }
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (!completeModal) return
-    completeMaintenance(completeModal.id, completeNotes)
+    try {
+      await completeMaintenance(completeModal.id, completeNotes)
+    } catch (err) {
+      addToast('error', 'Errore durante il completamento della manutenzione.')
+    }
     setCompleteModal(null)
     setCompleteNotes('')
   }

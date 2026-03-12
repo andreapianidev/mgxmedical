@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { Check, FileText } from 'lucide-react'
 import Modal from '../../shared/Modal'
 import ChecklistVerifiche from './ChecklistVerifiche'
@@ -56,10 +56,12 @@ export default function CloseInterventionModal({ intervention, isOpen, onClose, 
 
   // Reset when opening with a new intervention
   const prevIdRef = useRef(null)
-  if (intervention && intervention.id !== prevIdRef.current) {
-    prevIdRef.current = intervention.id
-    resetForIntervention()
-  }
+  useEffect(() => {
+    if (intervention && intervention.id !== prevIdRef.current) {
+      prevIdRef.current = intervention.id
+      resetForIntervention()
+    }
+  }, [intervention, resetForIntervention])
 
   const update = (key, val) => setForm(prev => ({ ...prev, [key]: val }))
 

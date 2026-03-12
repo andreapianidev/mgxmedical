@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
+import { useToast } from '../../contexts/ToastContext'
 import SectionHeader from '../shared/SectionHeader'
 import EmptyState from '../shared/EmptyState'
 import SearchBar from '../shared/SearchBar'
@@ -70,6 +71,7 @@ export default function NotificationsCenterV2() {
     deleteNotification,
     unreadCount,
   } = useGlobalStore()
+  const { addToast } = useToast()
 
   const [search, setSearch] = useState('')
   const [typeTab, setTypeTab] = useState('Tutte')
@@ -85,9 +87,13 @@ export default function NotificationsCenterV2() {
   }), [notifications])
 
   // ── Delete with confirmation ─────────────────────────────────────────────
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirmDeleteId === id) {
-      deleteNotification(id)
+      try {
+        await deleteNotification(id)
+      } catch (err) {
+        addToast('error', 'Errore durante l\'eliminazione della notifica.')
+      }
       setConfirmDeleteId(null)
     } else {
       setConfirmDeleteId(id)

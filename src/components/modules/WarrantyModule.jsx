@@ -41,6 +41,9 @@ export default function WarrantyModule() {
   const [selectedBatch, setSelectedBatch] = useState([])
   const [batchMessage, setBatchMessage] = useState('')
 
+  const tabs = ['Tutte', 'Scadute', 'Critiche', 'Warning', 'Valide']
+  const tabMap = { Tutte: 'Tutte', Scadute: 'SCADUTA', Critiche: 'CRITICA', Warning: 'WARNING', Valide: 'VALIDA' }
+
   const now = new Date()
 
   // Enrich devices with warranty info
@@ -144,9 +147,6 @@ export default function WarrantyModule() {
   const toggleBatchDevice = (id) => {
     setSelectedBatch(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
-
-  const tabs = ['Tutte', 'Scadute', 'Critiche', 'Warning', 'Valide']
-  const tabMap = { Tutte: 'Tutte', Scadute: 'SCADUTA', Critiche: 'CRITICA', Warning: 'WARNING', Valide: 'VALIDA' }
 
   return (
     <div className="space-y-6">

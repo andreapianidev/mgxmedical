@@ -7,9 +7,14 @@ const TENANT_ID = '00000000-0000-0000-0000-000000000001';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(res, 'POST');
 
-  // Simple protection: require a seed key
+  // Only allow seeding in non-production environments
+  if (process.env.VERCEL_ENV === 'production') {
+    return res.status(403).json({ error: 'Seed non disponibile in produzione' });
+  }
+
+  // Require SEED_KEY environment variable
   const { key } = req.body || {};
-  if (key !== process.env.SEED_KEY && key !== 'mgx-seed-2026') {
+  if (!process.env.SEED_KEY || key !== process.env.SEED_KEY) {
     return res.status(403).json({ error: 'Chiave seed non valida' });
   }
 

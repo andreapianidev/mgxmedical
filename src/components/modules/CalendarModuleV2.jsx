@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
+import { useToast } from '../../contexts/ToastContext'
 import SectionHeader from '../shared/SectionHeader'
 import Modal from '../shared/Modal'
 import EmptyState from '../shared/EmptyState'
@@ -42,6 +43,7 @@ const blankEvent = (dateStr) => ({
 
 export default function CalendarModuleV2() {
   const { calEvents, addCalEvent, updateCalEvent, deleteCalEvent } = useGlobalStore()
+  const { addToast } = useToast()
 
   // --- State ---
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -107,33 +109,42 @@ export default function CalendarModuleV2() {
     }))
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const evt = formModal.event
     if (!evt.title.trim() || !evt.eventDate) return
-    if (formModal.isEdit && evt.id) {
-      updateCalEvent(evt.id, {
-        title: evt.title,
-        eventType: evt.eventType,
-        eventDate: evt.eventDate,
-        startTime: evt.startTime,
-        endTime: evt.endTime,
-        color: evt.color,
-      })
-    } else {
-      addCalEvent({
-        title: evt.title,
-        eventType: evt.eventType,
-        eventDate: evt.eventDate,
-        startTime: evt.startTime,
-        endTime: evt.endTime,
-        color: evt.color,
-      })
+    try {
+      if (formModal.isEdit && evt.id) {
+        await updateCalEvent(evt.id, {
+          title: evt.title,
+          eventType: evt.eventType,
+          eventDate: evt.eventDate,
+          startTime: evt.startTime,
+          endTime: evt.endTime,
+          color: evt.color,
+        })
+      } else {
+        await addCalEvent({
+          title: evt.title,
+          eventType: evt.eventType,
+          eventDate: evt.eventDate,
+          startTime: evt.startTime,
+          endTime: evt.endTime,
+          color: evt.color,
+        })
+      }
+    } catch (err) {
+      addToast('error', 'Errore durante il salvataggio dell\'evento.')
+      return
     }
     closeForm()
   }
 
-  const handleDelete = (evtId) => {
-    deleteCalEvent(evtId)
+  const handleDelete = async (evtId) => {
+    try {
+      await deleteCalEvent(evtId)
+    } catch (err) {
+      addToast('error', 'Errore durante l\'eliminazione dell\'evento.')
+    }
   }
 
   // --- Unique event types present in a day (for dots) ---

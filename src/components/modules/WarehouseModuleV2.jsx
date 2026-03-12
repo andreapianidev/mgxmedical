@@ -82,17 +82,22 @@ export default function WarehouseModuleV2() {
   }
   const closeItemModal = () => setItemModal({ open: false, item: null })
 
-  const handleSaveItem = () => {
+  const handleSaveItem = async () => {
     if (!form.code.trim() || !form.name.trim()) {
       addToast('error', 'Codice e nome sono obbligatori.')
       return
     }
-    if (itemModal.item) {
-      updateWarehouseItem(itemModal.item.id, { ...form })
-      addToast('success', `Articolo ${form.code} aggiornato.`)
-    } else {
-      addWarehouseItem({ ...form })
-      addToast('success', `Articolo ${form.code} aggiunto al magazzino.`)
+    try {
+      if (itemModal.item) {
+        await updateWarehouseItem(itemModal.item.id, { ...form })
+        addToast('success', `Articolo ${form.code} aggiornato.`)
+      } else {
+        await addWarehouseItem({ ...form })
+        addToast('success', `Articolo ${form.code} aggiunto al magazzino.`)
+      }
+    } catch (err) {
+      addToast('error', 'Errore durante il salvataggio dell\'articolo.')
+      return
     }
     closeItemModal()
   }
@@ -116,26 +121,31 @@ export default function WarehouseModuleV2() {
   }
   const closeAdj = () => setAdjModal({ open: false, item: null })
 
-  const handleSaveAdj = () => {
+  const handleSaveAdj = async () => {
     if (!adjNote.trim()) {
       addToast('error', 'La nota di rettifica e obbligatoria.')
       return
     }
-    updateWarehouseItem(adjModal.item.id, { qty: Number(adjQty) })
-    logActivity({
-      userId: user?.id,
-      userName: user?.name,
-      action: 'warehouse.adjustment',
-      entityType: 'warehouse',
-      entityId: adjModal.item.id,
-      details: {
-        code: adjModal.item.code,
-        prevQty: adjModal.item.qty,
-        newQty: Number(adjQty),
-        note: adjNote.trim(),
-      },
-    })
-    addToast('success', `Quantita ${adjModal.item.code} rettificata: ${adjModal.item.qty} -> ${adjQty}`)
+    try {
+      await updateWarehouseItem(adjModal.item.id, { qty: Number(adjQty) })
+      await logActivity({
+        userId: user?.id,
+        userName: user?.name,
+        action: 'warehouse.adjustment',
+        entityType: 'warehouse',
+        entityId: adjModal.item.id,
+        details: {
+          code: adjModal.item.code,
+          prevQty: adjModal.item.qty,
+          newQty: Number(adjQty),
+          note: adjNote.trim(),
+        },
+      })
+      addToast('success', `Quantita ${adjModal.item.code} rettificata: ${adjModal.item.qty} -> ${adjQty}`)
+    } catch (err) {
+      addToast('error', 'Errore durante la rettifica della quantita.')
+      return
+    }
     closeAdj()
   }
 

@@ -91,7 +91,7 @@ export default function ContractsModuleV2() {
   }
   const closeFormModal = () => setFormModal({ open: false, contract: null })
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.code.trim() || !form.client.trim()) {
       addToast('error', 'Codice e cliente sono obbligatori.')
       return
@@ -105,12 +105,17 @@ export default function ContractsModuleV2() {
       startDate: form.startDate ? new Date(form.startDate).toISOString() : '',
       endDate: form.endDate ? new Date(form.endDate).toISOString() : '',
     }
-    if (formModal.contract) {
-      updateContract(formModal.contract.id, payload)
-      addToast('success', `Contratto ${form.code} aggiornato.`)
-    } else {
-      addContract(payload)
-      addToast('success', `Contratto ${form.code} creato.`)
+    try {
+      if (formModal.contract) {
+        await updateContract(formModal.contract.id, payload)
+        addToast('success', `Contratto ${form.code} aggiornato.`)
+      } else {
+        await addContract(payload)
+        addToast('success', `Contratto ${form.code} creato.`)
+      }
+    } catch (err) {
+      addToast('error', 'Errore durante il salvataggio del contratto.')
+      return
     }
     closeFormModal()
   }

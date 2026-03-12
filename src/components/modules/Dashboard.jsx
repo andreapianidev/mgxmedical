@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
+import { useToast } from '../../contexts/ToastContext'
 import KpiCard from '../shared/KpiCard'
 import StatusChip from '../shared/StatusChip'
 import PriorityPill from '../shared/PriorityPill'
@@ -15,6 +16,7 @@ import { differenceInDays } from 'date-fns'
 export default function Dashboard() {
   const navigate = useNavigate()
   const { interventions, devices, notifications, schedMaint, updateIntervention, fleet } = useGlobalStore()
+  const { addToast } = useToast()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [ackModal, setAckModal] = useState({ open: false, intervention: null })
@@ -89,13 +91,17 @@ export default function Dashboard() {
   }, [devices])
 
   // --- Acknowledge handler ---
-  const handleAcknowledge = () => {
+  const handleAcknowledge = async () => {
     if (!ackModal.intervention) return
-    updateIntervention(ackModal.intervention.id, {
-      status: 'acknowledged',
-      acknowledgedAt: new Date().toISOString(),
-      notes: ackNotes ? `${ackModal.intervention.notes || ''}\n[Presa in carico] ${ackNotes}`.trim() : ackModal.intervention.notes,
-    })
+    try {
+      await updateIntervention(ackModal.intervention.id, {
+        status: 'acknowledged',
+        acknowledgedAt: new Date().toISOString(),
+        notes: ackNotes ? `${ackModal.intervention.notes || ''}\n[Presa in carico] ${ackNotes}`.trim() : ackModal.intervention.notes,
+      })
+    } catch (err) {
+      addToast('error', 'Errore durante la presa in carico dell\'intervento.')
+    }
     setAckModal({ open: false, intervention: null })
     setAckNotes('')
   }
@@ -137,7 +143,7 @@ export default function Dashboard() {
                 {searchResults.map(d => (
                   <div
                     key={d.id}
-                    onClick={() => navigate('/registry')}
+                    onClick={() => navigate('/dhr')}
                     className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all"
                   >
                     <div className="flex items-start justify-between mb-2">

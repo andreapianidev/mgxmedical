@@ -74,7 +74,7 @@ export function GlobalStoreProvider({ children }) {
 
         // Fetch users separately (non-blocking if it fails)
         let usersData = []
-        try { usersData = await api.get('/users') } catch {}
+        try { usersData = await api.get('/users') } catch (e) { console.warn('Failed to fetch users:', e) }
 
         if (cancelled) return
         setDevices(devData)
@@ -124,7 +124,7 @@ export function GlobalStoreProvider({ children }) {
           relatedId: created.id,
         })
         setNotifications(prev => [notif, ...prev])
-      } catch {}
+      } catch (e) { console.warn('Failed to create notification:', e) }
       return created
     } catch (err) {
       setInterventions(prev => prev.filter(i => i.id !== tempId))
@@ -539,14 +539,14 @@ export function GlobalStoreProvider({ children }) {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n))
     try {
       await api.put(`/notifications/${id}`, { isRead: true })
-    } catch {}
+    } catch (e) { console.warn('Failed to mark notification read:', e) }
   }, [])
 
   const markAllNotificationsRead = useCallback(async () => {
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
     try {
       await api.post('/notifications/mark-all-read')
-    } catch {}
+    } catch (e) { console.warn('Failed to mark all notifications read:', e) }
   }, [])
 
   const toggleNotificationPin = useCallback(async (id) => {
@@ -555,7 +555,7 @@ export function GlobalStoreProvider({ children }) {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isPinned: newPinned } : n))
     try {
       await api.put(`/notifications/${id}`, { isPinned: newPinned })
-    } catch {}
+    } catch (e) { console.warn('Failed to toggle notification pin:', e) }
   }, [])
 
   const deleteNotification = useCallback(async (id) => {
@@ -563,7 +563,8 @@ export function GlobalStoreProvider({ children }) {
     setNotifications(p => p.filter(n => n.id !== id))
     try {
       await api.delete(`/notifications/${id}`)
-    } catch {
+    } catch (e) {
+      console.warn('Failed to delete notification:', e)
       setNotifications(prev)
     }
   }, [])
@@ -667,7 +668,8 @@ export function GlobalStoreProvider({ children }) {
     try {
       const created = await api.post('/activity-log', entry)
       setActivityLog(prev => prev.map(l => l.id === tempId ? created : l))
-    } catch {
+    } catch (e) {
+      console.warn('Failed to log activity:', e)
       setActivityLog(prev => prev.filter(l => l.id !== tempId))
     }
   }, [])

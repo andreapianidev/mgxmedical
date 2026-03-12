@@ -37,7 +37,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     try {
       await api.post('/auth/logout')
-    } catch {}
+    } catch (e) { console.warn('Logout API call failed:', e) }
     setUser(null)
   }, [])
 

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
+import { useToast } from '../../contexts/ToastContext'
 import SectionHeader from '../shared/SectionHeader'
 import KpiCard from '../shared/KpiCard'
 import Sparkline from '../shared/Sparkline'
@@ -53,6 +54,7 @@ const fmtTimestamp = (iso) => {
 // ---------------------------------------------------------------------------
 export default function MLEngineModule() {
   const { devices, interventions, addNotification } = useGlobalStore()
+  const { addToast } = useToast()
 
   // --- ML Models (static metadata — real ML pipeline config) ---
   const models = useMemo(() => {
@@ -153,16 +155,20 @@ export default function MLEngineModule() {
   // Track which alerts have been notified (local UI state)
   const [notified, setNotified] = useState({})
 
-  const handleGenerateNotification = (pred) => {
-    addNotification({
-      title: `ML Alert Critico — ${pred.deviceName}`,
-      message: `Probabilita guasto 24h: ${(pred.failureProbability24h * 100).toFixed(0)}%. Azione preventiva immediata consigliata.`,
-      type: 'alert',
-      severity: 'critical',
-      category: 'ML Engine',
-      relatedId: pred.deviceId,
-    })
-    setNotified(prev => ({ ...prev, [pred.deviceId]: true }))
+  const handleGenerateNotification = async (pred) => {
+    try {
+      await addNotification({
+        title: `ML Alert Critico — ${pred.deviceName}`,
+        message: `Probabilita guasto 24h: ${(pred.failureProbability24h * 100).toFixed(0)}%. Azione preventiva immediata consigliata.`,
+        notificationType: 'alert',
+        severity: 'critical',
+        category: 'ML Engine',
+        relatedId: pred.deviceId,
+      })
+      setNotified(prev => ({ ...prev, [pred.deviceId]: true }))
+    } catch (err) {
+      addToast('error', 'Errore durante la generazione della notifica.')
+    }
   }
 
   // ---------------------------------------------------------------------------

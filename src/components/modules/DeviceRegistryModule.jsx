@@ -144,7 +144,7 @@ export default function DeviceRegistryModule() {
     setFormOpen(true)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const payload = {
       ...form,
       installDate: form.installDate ? new Date(form.installDate).toISOString() : null,
@@ -157,10 +157,15 @@ export default function DeviceRegistryModule() {
       mtbf: Number(form.mtbf),
       serialNumber: form.hasSerial ? form.serialNumber : null,
     }
-    if (editDevice) {
-      updateDevice(editDevice.id, payload)
-    } else {
-      addDevice(payload)
+    try {
+      if (editDevice) {
+        await updateDevice(editDevice.id, payload)
+      } else {
+        await addDevice(payload)
+      }
+    } catch (err) {
+      addToast('error', 'Errore durante il salvataggio del prodotto.')
+      return
     }
     setFormOpen(false)
   }

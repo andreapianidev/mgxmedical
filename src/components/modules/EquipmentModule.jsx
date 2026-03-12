@@ -83,24 +83,32 @@ export default function EquipmentModule() {
     [interventions]
   )
 
-  const handleAssign = () => {
+  const handleAssign = async () => {
     if (!assignModal.item || !assignTech) return
-    updateEquipment(assignModal.item.id, {
-      status: 'in-use',
-      assignedTo: assignTech,
-      lastUsed: new Date().toISOString(),
-    })
+    try {
+      await updateEquipment(assignModal.item.id, {
+        status: 'in-use',
+        assignedTo: assignTech,
+        lastUsed: new Date().toISOString(),
+      })
+    } catch (err) {
+      addToast('error', 'Errore durante l\'assegnazione dello strumento.')
+    }
     setAssignModal({ open: false, item: null })
     setAssignTech('')
     setAssignNote('')
   }
 
-  const handleRelease = (item) => {
-    updateEquipment(item.id, {
-      status: 'available',
-      assignedTo: null,
-      lastUsed: new Date().toISOString(),
-    })
+  const handleRelease = async (item) => {
+    try {
+      await updateEquipment(item.id, {
+        status: 'available',
+        assignedTo: null,
+        lastUsed: new Date().toISOString(),
+      })
+    } catch (err) {
+      addToast('error', 'Errore durante il rilascio dello strumento.')
+    }
     setDetailItem(null)
   }
 

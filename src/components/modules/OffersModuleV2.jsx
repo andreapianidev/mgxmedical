@@ -117,7 +117,7 @@ export default function OffersModuleV2() {
   }, [offers])
 
   // ---------- Handlers: Send offer (mailto) ----------
-  const handleSendOffer = (offer) => {
+  const handleSendOffer = async (offer) => {
     const subject = encodeURIComponent(`Offerta ${offer.number} — MGX Medical Service`)
     const body = encodeURIComponent(
       `Gentile Cliente,\n\n` +
@@ -137,18 +137,30 @@ export default function OffersModuleV2() {
 
     // Update status to 'sent' if it was draft
     if (offer.status === 'draft') {
-      updateOffer(offer.id, { status: 'sent', createdAt: offer.createdAt || new Date().toISOString() })
+      try {
+        await updateOffer(offer.id, { status: 'sent', createdAt: offer.createdAt || new Date().toISOString() })
+      } catch (err) {
+        addToast('error', 'Errore durante l\'aggiornamento dello stato dell\'offerta.')
+      }
     }
   }
 
   // ---------- Handlers: Accept offer ----------
-  const handleAccept = (offer) => {
-    acceptOffer(offer.id)
+  const handleAccept = async (offer) => {
+    try {
+      await acceptOffer(offer.id)
+    } catch (err) {
+      addToast('error', 'Errore durante l\'accettazione dell\'offerta.')
+    }
   }
 
   // ---------- Handlers: Decline offer ----------
-  const handleDecline = (offer) => {
-    declineOffer(offer.id)
+  const handleDecline = async (offer) => {
+    try {
+      await declineOffer(offer.id)
+    } catch (err) {
+      addToast('error', 'Errore durante il rifiuto dell\'offerta.')
+    }
   }
 
   // ---------- Handlers: Delete offer ----------
@@ -169,26 +181,35 @@ export default function OffersModuleV2() {
     setShowNewModal(true)
   }
 
-  const handleCreateOffer = () => {
+  const handleCreateOffer = async () => {
     if (!newForm.client || !newForm.amount) {
       addToast('error', 'Cliente e importo sono obbligatori.')
       return
     }
 
-    const number = `OFF-${new Date().getFullYear()}/${String(offers.length + 1).padStart(3, '0')}`
-    addOffer({
-      number,
-      client: newForm.client,
-      amount: parseFloat(newForm.amount),
-      vatRate: 22,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      validUntil: newForm.validUntil || null,
-      acceptedAt: null,
-      interventionId: newForm.interventionId || null,
-      description: newForm.description,
-      notes: newForm.notes,
-    })
+    const maxNum = offers.reduce((max, o) => {
+      const match = o.number?.match(/OFF-\d{4}\/(\d+)/)
+      return match ? Math.max(max, parseInt(match[1], 10)) : max
+    }, 0)
+    const number = `OFF-${new Date().getFullYear()}/${String(maxNum + 1).padStart(3, '0')}`
+    try {
+      await addOffer({
+        number,
+        client: newForm.client,
+        amount: parseFloat(newForm.amount),
+        vatRate: 22,
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+        validUntil: newForm.validUntil || null,
+        acceptedAt: null,
+        interventionId: newForm.interventionId || null,
+        description: newForm.description,
+        notes: newForm.notes,
+      })
+    } catch (err) {
+      addToast('error', 'Errore durante la creazione dell\'offerta.')
+      return
+    }
     setShowNewModal(false)
   }
 
