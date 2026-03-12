@@ -82,7 +82,7 @@ export default function NotificationsCenterV2() {
   const kpis = useMemo(() => ({
     total: notifications.length,
     unread: notifications.filter(n => !n.isRead).length,
-    critical: notifications.filter(n => n.type === 'alert' && !n.isRead).length,
+    critical: notifications.filter(n => n.notificationType === 'alert' && !n.isRead).length,
     pinned: notifications.filter(n => n.isPinned).length,
   }), [notifications])
 
@@ -117,7 +117,7 @@ export default function NotificationsCenterV2() {
 
     // Type filter
     if (typeTab !== 'Tutte') {
-      list = list.filter(n => n.type === typeTab)
+      list = list.filter(n => n.notificationType === typeTab)
     }
 
     // Category filter
@@ -235,7 +235,7 @@ export default function NotificationsCenterV2() {
       ) : (
         <div className="space-y-2">
           {filtered.map(n => {
-            const style = TYPE_STYLES[n.type] || TYPE_STYLES.info
+            const style = TYPE_STYLES[n.notificationType] || TYPE_STYLES.info
             const IconComp = style.Icon
             return (
               <div
