@@ -45,6 +45,8 @@ export default function LoginScreen() {
     if (result.success) {
       addToast('success', `Benvenuto, ${user.name}!`)
       navigate('/dashboard')
+    } else {
+      setError(result.error)
     }
     setLoading(false)
   }

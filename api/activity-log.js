@@ -31,7 +31,7 @@ export default async function handler(req, res) {
           tenant_id, user_id, user_name, action,
           entity_type, entity_id, details, session_id
         ) VALUES (
-          ${user.tenantId}, ${b.userId || user.userId},
+          ${user.tenantId}, ${user.userId},
           ${b.userName || null}, ${b.action},
           ${b.entityType || null}, ${b.entityId || null},
           ${JSON.stringify(b.details || {})}, ${b.sessionId || null}

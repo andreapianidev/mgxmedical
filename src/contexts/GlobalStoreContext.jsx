@@ -553,7 +553,8 @@ export function GlobalStoreProvider({ children }) {
 
   const toggleNotificationPin = useCallback(async (id) => {
     const notif = notificationsRef.current.find(n => n.id === id)
-    const newPinned = !notif?.isPinned
+    if (!notif) return
+    const newPinned = !notif.isPinned
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isPinned: newPinned } : n))
     try {
       await api.put(`/notifications/${id}`, { isPinned: newPinned })

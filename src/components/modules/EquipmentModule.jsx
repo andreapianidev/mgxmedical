@@ -69,9 +69,9 @@ export default function EquipmentModule() {
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter(e =>
-        e.name.toLowerCase().includes(q) ||
-        e.code.toLowerCase().includes(q) ||
-        e.category.toLowerCase().includes(q)
+        (e.name || '').toLowerCase().includes(q) ||
+        (e.code || '').toLowerCase().includes(q) ||
+        (e.category || '').toLowerCase().includes(q)
       )
     }
     return list
