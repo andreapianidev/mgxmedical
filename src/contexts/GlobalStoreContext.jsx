@@ -52,11 +52,7 @@ export function GlobalStoreProvider({ children }) {
 
     async function loadAll() {
       try {
-        const [
-          devData, intData, whData, conData, offData,
-          maintData, calData, shiftData, notifData,
-          eqData, fleetData, attData, logData,
-        ] = await Promise.all([
+        const results = await Promise.allSettled([
           api.get('/devices'),
           api.get('/interventions'),
           api.get('/warehouse'),
@@ -71,6 +67,12 @@ export function GlobalStoreProvider({ children }) {
           api.get('/attachments'),
           api.get('/activity-log'),
         ])
+        const v = (i) => results[i].status === 'fulfilled' ? results[i].value : []
+        const [
+          devData, intData, whData, conData, offData,
+          maintData, calData, shiftData, notifData,
+          eqData, fleetData, attData, logData,
+        ] = [v(0),v(1),v(2),v(3),v(4),v(5),v(6),v(7),v(8),v(9),v(10),v(11),v(12)]
 
         // Fetch users separately (non-blocking if it fails)
         let usersData = []

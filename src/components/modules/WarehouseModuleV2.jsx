@@ -123,7 +123,7 @@ export default function WarehouseModuleV2() {
 
   const handleSaveAdj = async () => {
     if (!adjNote.trim()) {
-      addToast('error', 'La nota di rettifica e obbligatoria.')
+      addToast('error', 'La nota di rettifica è obbligatoria.')
       return
     }
     try {
@@ -141,9 +141,9 @@ export default function WarehouseModuleV2() {
           note: adjNote.trim(),
         },
       })
-      addToast('success', `Quantita ${adjModal.item.code} rettificata: ${adjModal.item.qty} -> ${adjQty}`)
+      addToast('success', `Quantità ${adjModal.item.code} rettificata: ${adjModal.item.qty} → ${adjQty}`)
     } catch (err) {
-      addToast('error', 'Errore durante la rettifica della quantita.')
+      addToast('error', 'Errore durante la rettifica della quantità.')
       return
     }
     closeAdj()
@@ -344,7 +344,7 @@ export default function WarehouseModuleV2() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nuova quantita</label>
-            <input type="number" min={0} value={adjQty} onChange={e => setAdjQty(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            <input type="number" min={0} value={adjQty} onChange={e => setAdjQty(Number(e.target.value))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Motivazione rettifica *</label>

@@ -91,7 +91,7 @@ export default function ReportsModule() {
 
   // Calculate parts cost from warehouse value
   const partsCost = useMemo(() => {
-    return warehouse.reduce((sum, w) => sum + ((w.unitPrice || 0) * (w.qty || 0)), 0)
+    return warehouse.reduce((sum, w) => sum + ((w.unitCost || 0) * (w.qty || 0)), 0)
   }, [warehouse])
 
   // ---------- Performance per Cliente ----------

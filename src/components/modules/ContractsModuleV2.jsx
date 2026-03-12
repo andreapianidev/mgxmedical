@@ -102,8 +102,8 @@ export default function ContractsModuleV2() {
       devicesCount: Number(form.devicesCount),
       slaResponseHours: form.slaResponseHours ? Number(form.slaResponseHours) : null,
       slaResolutionHours: form.slaResolutionHours ? Number(form.slaResolutionHours) : null,
-      startDate: form.startDate ? new Date(form.startDate).toISOString() : '',
-      endDate: form.endDate ? new Date(form.endDate).toISOString() : '',
+      startDate: form.startDate ? new Date(form.startDate).toISOString() : null,
+      endDate: form.endDate ? new Date(form.endDate).toISOString() : null,
     }
     try {
       if (formModal.contract) {
@@ -351,7 +351,7 @@ export default function ContractsModuleV2() {
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Valore annuo</label>
-              <input type="number" min={0} step={100} value={form.value} onChange={e => updateField('value', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              <input type="number" min={0} step={100} value={form.value} onChange={e => updateField('value', Number(e.target.value))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Data inizio</label>
@@ -365,17 +365,17 @@ export default function ContractsModuleV2() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">SLA Risposta (ore)</label>
-              <input type="number" min={0} value={form.slaResponseHours} onChange={e => updateField('slaResponseHours', e.target.value)} placeholder="es. 2" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              <input type="number" min={0} value={form.slaResponseHours} onChange={e => updateField('slaResponseHours', Number(e.target.value))} placeholder="es. 2" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">SLA Risoluzione (ore)</label>
-              <input type="number" min={0} value={form.slaResolutionHours} onChange={e => updateField('slaResolutionHours', e.target.value)} placeholder="es. 8" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              <input type="number" min={0} value={form.slaResolutionHours} onChange={e => updateField('slaResolutionHours', Number(e.target.value))} placeholder="es. 8" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">N. Dispositivi</label>
-              <input type="number" min={0} value={form.devicesCount} onChange={e => updateField('devicesCount', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              <input type="number" min={0} value={form.devicesCount} onChange={e => updateField('devicesCount', Number(e.target.value))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Stato</label>

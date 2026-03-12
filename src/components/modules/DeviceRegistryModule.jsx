@@ -333,7 +333,7 @@ export default function DeviceRegistryModule() {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Prezzo di Listino (€)</label>
-            <input type="number" step="0.01" min="0" value={form.listPrice} onChange={e => setField('listPrice', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="0.00" />
+            <input type="number" step="0.01" min="0" value={form.listPrice} onChange={e => setField('listPrice', Number(e.target.value))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="0.00" />
           </div>
 
           {/* Sezione: Tracciabilità */}

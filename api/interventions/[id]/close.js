@@ -54,8 +54,10 @@ export default async function handler(req, res) {
     // 3. Decrement warehouse parts
     if (b.partsUsed?.length > 0) {
       for (const part of b.partsUsed) {
+        const qty = Number(part.qty);
+        if (!part.code || !Number.isFinite(qty) || qty <= 0) continue;
         txQueries.push(sql`
-          UPDATE warehouse SET qty = GREATEST(0, qty - ${part.qty})
+          UPDATE warehouse SET qty = GREATEST(0, qty - ${qty})
           WHERE code = ${part.code} AND tenant_id = ${user.tenantId}
         `);
       }
@@ -75,7 +77,11 @@ export default async function handler(req, res) {
     // Execute all as a single transaction
     const results = await sql.transaction(txQueries);
 
-    return res.status(200).json(toCamel(results[0][0]));
+    const closed = results[0]?.[0];
+    if (!closed) {
+      return res.status(404).json({ error: 'Intervento non trovato' });
+    }
+    return res.status(200).json(toCamel(closed));
   } catch (err) {
     return handleError(res, err);
   }

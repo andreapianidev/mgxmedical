@@ -105,21 +105,6 @@ export function getHealthColor(score) {
   return 'red'
 }
 
-// ─── ID Generation ───────────────────────────────────────────────────────────
-
-/**
- * Generate a pseudo-unique ID with a prefix (e.g. INT-2401-A3F).
- * @param {string} prefix - e.g. 'INT', 'DEV', 'WRN'
- * @returns {string}
- */
-export function generateId(prefix = 'ID') {
-  const now = new Date()
-  const yy = String(now.getFullYear()).slice(-2)
-  const mm = String(now.getMonth() + 1).padStart(2, '0')
-  const suffix = Math.random().toString(36).substring(2, 5).toUpperCase()
-  return `${prefix}-${yy}${mm}-${suffix}`
-}
-
 // ─── Debounce ────────────────────────────────────────────────────────────────
 
 /**
@@ -137,44 +122,6 @@ export function debounce(fn, ms = 300) {
   }
 }
 
-// ─── Sharing Helpers ─────────────────────────────────────────────────────────
-
-/**
- * Build a mailto body string for sharing an intervention via email.
- * @param {object} data - { id, type, priority, client, device, description, date }
- * @returns {string}
- */
-export function buildEmailBody(data) {
-  const lines = [
-    `Intervento: ${data.id || ''}`,
-    `Tipo: ${data.type || ''}`,
-    `Priorit\u00E0: ${data.priority || ''}`,
-    `Cliente: ${data.client || ''}`,
-    `Dispositivo: ${data.device || ''}`,
-    `Descrizione: ${data.description || ''}`,
-    `Data: ${data.date ? formatDate(data.date) : ''}`,
-  ]
-  return encodeURIComponent(lines.join('\n'))
-}
-
-/**
- * Build a WhatsApp sharing text for an intervention.
- * @param {object} data - { id, type, priority, client, device, description, date }
- * @returns {string}
- */
-export function buildWhatsAppText(data) {
-  const lines = [
-    `*Intervento ${data.id || ''}*`,
-    `Tipo: ${data.type || ''}`,
-    `Priorit\u00E0: ${data.priority || ''}`,
-    `Cliente: ${data.client || ''}`,
-    `Dispositivo: ${data.device || ''}`,
-    `Descrizione: ${data.description || ''}`,
-    `Data: ${data.date ? formatDate(data.date) : ''}`,
-  ]
-  return encodeURIComponent(lines.join('\n'))
-}
-
 // ─── Class Names Utility ─────────────────────────────────────────────────────
 
 /**
@@ -186,15 +133,3 @@ export function cn(...classes) {
   return classes.filter(Boolean).join(' ')
 }
 
-// ─── Pluralize ───────────────────────────────────────────────────────────────
-
-/**
- * Return count followed by the correct singular/plural label.
- * @param {number} count
- * @param {string} singular
- * @param {string} plural
- * @returns {string}
- */
-export function pluralize(count, singular, plural) {
-  return `${count} ${count === 1 ? singular : plural}`
-}

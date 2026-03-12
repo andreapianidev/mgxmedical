@@ -156,7 +156,7 @@ export const CHECKLIST_ITEMS = [
   { key: 'filtri', label: 'Filtri' },
   { key: 'acquisizione_riproduzione_stampa', label: 'Acquisizione / Riproduzione / Stampa' },
   { key: 'hardware', label: 'Hardware' },
-  { key: 'connettivita', label: 'Connettivita (Cablata / Wireless)' },
+  { key: 'connettivita', label: 'Connettività (Cablata / Wireless)' },
   { key: 'software', label: 'Software' },
   { key: 'database_backup', label: 'Database / Backup Dati' },
   { key: 'comandi_operatore', label: 'Op. Comandi Acc. Operatore' },
