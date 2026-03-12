@@ -24,6 +24,9 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     const b = req.body || {};
+    if (!b.techId) return res.status(400).json({ error: 'Tecnico è richiesto' });
+    if (!b.techName) return res.status(400).json({ error: 'Nome tecnico è richiesto' });
+    if (!b.shiftDate) return res.status(400).json({ error: 'Data turno è richiesta' });
     try {
       const rows = await sql`
         INSERT INTO shifts (

@@ -24,6 +24,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     const b = req.body || {};
+    if (!b.name) return res.status(400).json({ error: 'Nome dispositivo è richiesto' });
     try {
       const rows = await sql`
         INSERT INTO devices (

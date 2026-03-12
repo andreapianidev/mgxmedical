@@ -24,6 +24,8 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     const b = req.body || {};
+    if (!b.code) return res.status(400).json({ error: 'Codice è richiesto' });
+    if (!b.client) return res.status(400).json({ error: 'Cliente è richiesto' });
     try {
       const rows = await sql`
         INSERT INTO contracts (

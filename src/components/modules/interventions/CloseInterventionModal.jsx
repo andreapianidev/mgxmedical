@@ -111,12 +111,18 @@ export default function CloseInterventionModal({ intervention, isOpen, onClose, 
     }
   }
 
-  const handleSubmit = () => {
-    onSubmit(buildCloseData())
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleSubmit = async () => {
+    if (submitting) return
+    setSubmitting(true)
+    try { await onSubmit(buildCloseData()) } finally { setSubmitting(false) }
   }
 
-  const handleSubmitAndPdf = () => {
-    onSubmitAndPdf(buildCloseData())
+  const handleSubmitAndPdf = async () => {
+    if (submitting) return
+    setSubmitting(true)
+    try { await onSubmitAndPdf(buildCloseData()) } finally { setSubmitting(false) }
   }
 
   // Section divider
@@ -377,15 +383,17 @@ export default function CloseInterventionModal({ intervention, isOpen, onClose, 
           </button>
           <button
             onClick={handleSubmit}
-            className="flex items-center justify-center gap-2 px-5 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+            disabled={submitting}
+            className="flex items-center justify-center gap-2 px-5 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Check size={15} /> Chiudi Intervento
+            <Check size={15} /> {submitting ? 'Chiusura...' : 'Chiudi Intervento'}
           </button>
           <button
             onClick={handleSubmitAndPdf}
-            className="flex items-center justify-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            disabled={submitting}
+            className="flex items-center justify-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FileText size={15} /> Chiudi e Genera PDF
+            <FileText size={15} /> {submitting ? 'Chiusura...' : 'Chiudi e Genera PDF'}
           </button>
         </div>
       </div>

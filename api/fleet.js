@@ -24,6 +24,8 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     const b = req.body || {};
+    if (!b.plate) return res.status(400).json({ error: 'Targa è richiesta' });
+    if (!b.model) return res.status(400).json({ error: 'Modello è richiesto' });
     try {
       const rows = await sql`
         INSERT INTO fleet (tenant_id, plate, model, tech_id, tech_name, status, km_today, last_position)

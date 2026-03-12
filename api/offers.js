@@ -24,6 +24,8 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     const b = req.body || {};
+    if (!b.client) return res.status(400).json({ error: 'Client è richiesto' });
+    if (b.amount == null) return res.status(400).json({ error: 'Importo è richiesto' });
     try {
       const rows = await sql`
         INSERT INTO offers (

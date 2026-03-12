@@ -165,7 +165,7 @@ export function GlobalStoreProvider({ children }) {
       i.id === id ? { ...i, status: 'completed', closedAt: new Date().toISOString(), ...closeData } : i
     ))
 
-    const intervention = interventionsRef.current.find(i => i.id === id)
+    const intervention = prevInterventions.find(i => i.id === id)
     if (closeData.healthPost && intervention?.deviceId) {
       setDevices(p => p.map(d =>
         d.id === intervention.deviceId ? { ...d, healthScore: closeData.healthPost } : d

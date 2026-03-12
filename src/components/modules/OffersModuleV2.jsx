@@ -146,21 +146,27 @@ export default function OffersModuleV2() {
   }
 
   // ---------- Handlers: Accept offer ----------
+  const [actionLoading, setActionLoading] = useState(null)
+
   const handleAccept = async (offer) => {
+    if (actionLoading) return
+    setActionLoading(offer.id)
     try {
       await acceptOffer(offer.id)
     } catch (err) {
       addToast('error', 'Errore durante l\'accettazione dell\'offerta.')
-    }
+    } finally { setActionLoading(null) }
   }
 
   // ---------- Handlers: Decline offer ----------
   const handleDecline = async (offer) => {
+    if (actionLoading) return
+    setActionLoading(offer.id)
     try {
       await declineOffer(offer.id)
     } catch (err) {
       addToast('error', 'Errore durante il rifiuto dell\'offerta.')
-    }
+    } finally { setActionLoading(null) }
   }
 
   // ---------- Handlers: Delete offer ----------
@@ -334,15 +340,17 @@ export default function OffersModuleV2() {
                             <>
                               <button
                                 onClick={() => handleAccept(offer)}
-                                className="px-3 py-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                                disabled={actionLoading === offer.id}
+                                className="px-3 py-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
-                                Accetta
+                                {actionLoading === offer.id ? '...' : 'Accetta'}
                               </button>
                               <button
                                 onClick={() => handleDecline(offer)}
-                                className="px-3 py-1 text-xs font-medium bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                                disabled={actionLoading === offer.id}
+                                className="px-3 py-1 text-xs font-medium bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
-                                Rifiuta
+                                {actionLoading === offer.id ? '...' : 'Rifiuta'}
                               </button>
                             </>
                           )}

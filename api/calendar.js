@@ -24,6 +24,8 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     const b = req.body || {};
+    if (!b.title) return res.status(400).json({ error: 'Titolo è richiesto' });
+    if (!b.eventDate) return res.status(400).json({ error: 'Data evento è richiesta' });
     try {
       const rows = await sql`
         INSERT INTO calendar_events (

@@ -35,7 +35,8 @@ export default async function handler(req, res) {
           scheduled_date = COALESCE(${b.scheduledDate ?? null}, scheduled_date),
           status = COALESCE(${b.status ?? null}, status),
           frequency = COALESCE(${b.frequency ?? null}, frequency),
-          notes = COALESCE(${b.notes ?? null}, notes)
+          notes = COALESCE(${b.notes ?? null}, notes),
+          completed_at = COALESCE(${b.completedAt ?? null}, completed_at)
         WHERE id = ${id}::uuid AND tenant_id = ${user.tenantId}
         RETURNING *
       `;
