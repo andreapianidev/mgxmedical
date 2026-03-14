@@ -24,18 +24,26 @@ export default async function handler(req, res) {
 
   if (req.method === 'PUT') {
     const b = req.body || {};
+
+    // Recompute amount from line items if provided
+    const lineItems = Array.isArray(b.lineItems) ? b.lineItems : null;
+    const computedAmount = lineItems
+      ? lineItems.reduce((sum, li) => sum + (parseFloat(li.qty) || 0) * (parseFloat(li.unitPrice) || 0), 0)
+      : (b.amount ?? null);
+
     try {
       const rows = await sql`
         UPDATE offers SET
           number = COALESCE(${b.number ?? null}, number),
           client = COALESCE(${b.client ?? null}, client),
-          amount = COALESCE(${b.amount ?? null}, amount),
+          amount = COALESCE(${computedAmount}, amount),
           vat_rate = COALESCE(${b.vatRate ?? null}, vat_rate),
           status = COALESCE(${b.status ?? null}, status),
           valid_until = COALESCE(${b.validUntil ?? null}, valid_until),
           intervention_id = COALESCE(${b.interventionId ?? null}, intervention_id),
           description = COALESCE(${b.description ?? null}, description),
-          notes = COALESCE(${b.notes ?? null}, notes)
+          notes = COALESCE(${b.notes ?? null}, notes),
+          line_items = COALESCE(${lineItems ? JSON.stringify(lineItems) : null}::jsonb, line_items)
         WHERE id = ${id}::uuid AND tenant_id = ${user.tenantId}
         RETURNING *
       `;

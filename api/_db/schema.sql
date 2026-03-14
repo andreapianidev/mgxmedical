@@ -163,8 +163,10 @@ CREATE TABLE IF NOT EXISTS offers (
   accepted_at TIMESTAMPTZ,
   intervention_id UUID REFERENCES interventions(id),
   description TEXT,
-  notes TEXT
+  notes TEXT,
+  line_items JSONB DEFAULT '[]'
 );
+ALTER TABLE offers ADD COLUMN IF NOT EXISTS line_items JSONB DEFAULT '[]';
 
 -- Manutenzioni preventive schedulate
 CREATE TABLE IF NOT EXISTS scheduled_maintenance (

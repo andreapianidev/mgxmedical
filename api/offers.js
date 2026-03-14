@@ -25,17 +25,28 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const b = req.body || {};
     if (!b.client) return res.status(400).json({ error: 'Client è richiesto' });
-    if (b.amount == null) return res.status(400).json({ error: 'Importo è richiesto' });
+
+    // Compute amount from line items if provided, otherwise use amount directly
+    const lineItems = Array.isArray(b.lineItems) ? b.lineItems : [];
+    const computedAmount = lineItems.length > 0
+      ? lineItems.reduce((sum, li) => sum + (parseFloat(li.qty) || 0) * (parseFloat(li.unitPrice) || 0), 0)
+      : parseFloat(b.amount) || 0;
+
+    if (computedAmount <= 0 && b.amount == null) {
+      return res.status(400).json({ error: 'Importo o voci preventivo richiesti' });
+    }
+
     try {
       const rows = await sql`
         INSERT INTO offers (
           tenant_id, number, client, amount, vat_rate, status,
-          valid_until, intervention_id, description, notes
+          valid_until, intervention_id, description, notes, line_items
         ) VALUES (
           ${user.tenantId}, ${b.number || null}, ${b.client},
-          ${b.amount || 0}, ${b.vatRate || 22}, ${b.status || 'draft'},
+          ${computedAmount}, ${b.vatRate || 22}, ${b.status || 'draft'},
           ${b.validUntil || null}, ${b.interventionId || null},
-          ${b.description || null}, ${b.notes || null}
+          ${b.description || null}, ${b.notes || null},
+          ${JSON.stringify(lineItems)}
         ) RETURNING *
       `;
       return res.status(201).json(toCamel(rows[0]));

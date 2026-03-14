@@ -25,6 +25,8 @@ const STATUS_TABS = [
   { key: 'expired', label: 'Scadute' },
 ]
 
+const VAT_RATE = 22
+
 // ---------------------------------------------------------------------------
 // Helper — compute effective status with auto-expiry
 // ---------------------------------------------------------------------------
@@ -32,12 +34,146 @@ function getEffectiveStatus(offer) {
   if (offer.status === 'accepted') return 'accepted'
   if (offer.status === 'declined') return 'declined'
   if (offer.status === 'expired') return 'expired'
-  // Auto-expire: offers past validUntil that aren't accepted/declined
   if (offer.validUntil && offer.status !== 'draft') {
     const until = new Date(offer.validUntil)
     if (until < new Date()) return 'expired'
   }
   return offer.status
+}
+
+function newLineItem() {
+  return { id: crypto.randomUUID(), description: '', qty: 1, unitPrice: '' }
+}
+
+function computeSubtotal(lineItems) {
+  return lineItems.reduce((sum, li) =>
+    sum + (parseFloat(li.qty) || 0) * (parseFloat(li.unitPrice) || 0), 0
+  )
+}
+
+// ---------------------------------------------------------------------------
+// LineItemsEditor — table used inside the New Offer modal
+// ---------------------------------------------------------------------------
+function LineItemsEditor({ lineItems, onChange }) {
+  const add = () => onChange([...lineItems, newLineItem()])
+  const remove = (id) => onChange(lineItems.filter(li => li.id !== id))
+  const update = (id, field, value) =>
+    onChange(lineItems.map(li => li.id === id ? { ...li, [field]: value } : li))
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-sm font-medium text-gray-700">Voci preventivo</label>
+        <button
+          type="button"
+          onClick={add}
+          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+        >
+          <Plus size={13} /> Aggiungi voce
+        </button>
+      </div>
+
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="text-left px-3 py-2 font-medium text-gray-500 text-xs">Descrizione</th>
+              <th className="text-right px-3 py-2 font-medium text-gray-500 text-xs w-16">Qtà</th>
+              <th className="text-right px-3 py-2 font-medium text-gray-500 text-xs w-28">Prezzo Unit.</th>
+              <th className="text-right px-3 py-2 font-medium text-gray-500 text-xs w-24">Totale</th>
+              <th className="w-8"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {lineItems.map((li) => {
+              const rowTotal = (parseFloat(li.qty) || 0) * (parseFloat(li.unitPrice) || 0)
+              return (
+                <tr key={li.id} className="border-t border-gray-100">
+                  <td className="px-2 py-1.5">
+                    <input
+                      type="text"
+                      value={li.description}
+                      onChange={e => update(li.id, 'description', e.target.value)}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-300"
+                      placeholder="Es. Manodopera, ricambio..."
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={li.qty}
+                      onChange={e => update(li.id, 'qty', e.target.value)}
+                      className="w-full px-2 py-1.5 text-sm text-right border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-300"
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={li.unitPrice}
+                      onChange={e => update(li.id, 'unitPrice', e.target.value)}
+                      className="w-full px-2 py-1.5 text-sm text-right border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-300"
+                      placeholder="0,00"
+                    />
+                  </td>
+                  <td className="px-3 py-1.5 text-right text-gray-700 font-medium whitespace-nowrap tabular-nums">
+                    {formatCurrency(rowTotal)}
+                  </td>
+                  <td className="px-2 py-1.5 text-center">
+                    {lineItems.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => remove(li.id)}
+                        className="p-1 text-gray-300 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// LineItemsTable — read-only view in detail modal
+// ---------------------------------------------------------------------------
+function LineItemsTable({ lineItems }) {
+  if (!lineItems?.length) return null
+  return (
+    <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th className="text-left px-3 py-2 font-medium text-gray-500 text-xs">Descrizione</th>
+            <th className="text-right px-3 py-2 font-medium text-gray-500 text-xs">Qtà</th>
+            <th className="text-right px-3 py-2 font-medium text-gray-500 text-xs">Prezzo Unit.</th>
+            <th className="text-right px-3 py-2 font-medium text-gray-500 text-xs">Totale</th>
+          </tr>
+        </thead>
+        <tbody>
+          {lineItems.map((li, idx) => (
+            <tr key={idx} className="border-t border-gray-100">
+              <td className="px-3 py-2 text-gray-700">{li.description}</td>
+              <td className="px-3 py-2 text-right text-gray-600 tabular-nums">{li.qty}</td>
+              <td className="px-3 py-2 text-right text-gray-600 tabular-nums">{formatCurrency(li.unitPrice)}</td>
+              <td className="px-3 py-2 text-right text-gray-700 font-medium tabular-nums">
+                {formatCurrency((parseFloat(li.qty) || 0) * (parseFloat(li.unitPrice) || 0))}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
 }
 
 // ===========================================================================
@@ -54,16 +190,17 @@ export default function OffersModuleV2() {
   const [showNewModal, setShowNewModal] = useState(false)
   const [detailOffer, setDetailOffer] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [actionLoading, setActionLoading] = useState(null)
 
   // New offer form
   const [newForm, setNewForm] = useState({
     client: '',
-    amount: '',
     validUntil: '',
     description: '',
     notes: '',
     interventionId: '',
   })
+  const [lineItems, setLineItems] = useState([newLineItem()])
 
   // ---------- Enrich offers with effective status ----------
   const enriched = useMemo(
@@ -76,28 +213,18 @@ export default function OffersModuleV2() {
     const inAttesa = enriched
       .filter(o => o.effectiveStatus === 'sent')
       .reduce((sum, o) => sum + (o.amount || 0), 0)
-
     const accettate = enriched
       .filter(o => o.effectiveStatus === 'accepted')
       .reduce((sum, o) => sum + (o.amount || 0), 0)
-
     const bozze = enriched.filter(o => o.effectiveStatus === 'draft').length
-
     const scadute = enriched.filter(o => o.effectiveStatus === 'expired' || o.effectiveStatus === 'declined').length
-
     return { inAttesa, accettate, bozze, scadute }
   }, [enriched])
 
   // ---------- Filtered list ----------
   const filtered = useMemo(() => {
     let list = enriched
-
-    // Status tab
-    if (statusTab !== 'all') {
-      list = list.filter(o => o.effectiveStatus === statusTab)
-    }
-
-    // Search
+    if (statusTab !== 'all') list = list.filter(o => o.effectiveStatus === statusTab)
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter(o =>
@@ -106,28 +233,38 @@ export default function OffersModuleV2() {
         (o.description || '').toLowerCase().includes(q)
       )
     }
-
     return list
   }, [enriched, statusTab, search])
 
   // ---------- Unique clients for dropdown ----------
-  const uniqueClients = useMemo(() => {
-    const clients = [...new Set(offers.map(o => o.client).filter(Boolean))]
-    return clients.sort()
-  }, [offers])
+  const uniqueClients = useMemo(
+    () => [...new Set(offers.map(o => o.client).filter(Boolean))].sort(),
+    [offers]
+  )
+
+  // ---------- Computed subtotal for new offer ----------
+  const subtotal = useMemo(() => computeSubtotal(lineItems), [lineItems])
 
   // ---------- Handlers: Send offer (mailto) ----------
   const handleSendOffer = async (offer) => {
     const subject = encodeURIComponent(`Offerta ${offer.number} — MGX Medical Service`)
+
+    const lineItemsText = offer.lineItems?.length > 0
+      ? offer.lineItems.map((li, i) =>
+          `  ${i + 1}. ${li.description} — Qtà: ${li.qty} × ${formatCurrency(li.unitPrice)} = ${formatCurrency((li.qty || 0) * (li.unitPrice || 0))}`
+        ).join('\n')
+      : null
+
     const body = encodeURIComponent(
       `Gentile Cliente,\n\n` +
       `In allegato l'offerta n. ${offer.number}.\n\n` +
       `Dettagli:\n` +
       `- Cliente: ${offer.client}\n` +
       `- Descrizione: ${offer.description || '-'}\n` +
-      `- Importo: ${formatCurrency(offer.amount)}\n` +
-      `- IVA: ${offer.vatRate || 22}%\n` +
-      `- Totale: ${formatCurrency((offer.amount || 0) * 1.22)}\n` +
+      (lineItemsText ? `\nVoci preventivo:\n${lineItemsText}\n` : '') +
+      `\n- Imponibile: ${formatCurrency(offer.amount)}\n` +
+      `- IVA: ${offer.vatRate || VAT_RATE}%\n` +
+      `- Totale: ${formatCurrency((offer.amount || 0) * (1 + (offer.vatRate || VAT_RATE) / 100))}\n` +
       `- Validità: ${offer.validUntil ? formatDate(offer.validUntil) : 'Da definire'}\n` +
       `${offer.notes ? `\nNote: ${offer.notes}` : ''}\n\n` +
       `Restiamo a disposizione per qualsiasi chiarimento.\n\n` +
@@ -135,41 +272,33 @@ export default function OffersModuleV2() {
     )
     window.open(`mailto:?subject=${subject}&body=${body}`, '_self')
 
-    // Update status to 'sent' if it was draft
     if (offer.status === 'draft') {
       try {
-        await updateOffer(offer.id, { status: 'sent', createdAt: offer.createdAt || new Date().toISOString() })
-      } catch (err) {
-        addToast('error', 'Errore durante l\'aggiornamento dello stato dell\'offerta.')
+        await updateOffer(offer.id, { status: 'sent' })
+      } catch {
+        addToast('error', 'Errore durante l\'aggiornamento dello stato.')
       }
     }
   }
 
-  // ---------- Handlers: Accept offer ----------
-  const [actionLoading, setActionLoading] = useState(null)
-
+  // ---------- Accept / Decline ----------
   const handleAccept = async (offer) => {
     if (actionLoading) return
     setActionLoading(offer.id)
-    try {
-      await acceptOffer(offer.id)
-    } catch (err) {
-      addToast('error', 'Errore durante l\'accettazione dell\'offerta.')
-    } finally { setActionLoading(null) }
+    try { await acceptOffer(offer.id) }
+    catch { addToast('error', 'Errore durante l\'accettazione.') }
+    finally { setActionLoading(null) }
   }
 
-  // ---------- Handlers: Decline offer ----------
   const handleDecline = async (offer) => {
     if (actionLoading) return
     setActionLoading(offer.id)
-    try {
-      await declineOffer(offer.id)
-    } catch (err) {
-      addToast('error', 'Errore durante il rifiuto dell\'offerta.')
-    } finally { setActionLoading(null) }
+    try { await declineOffer(offer.id) }
+    catch { addToast('error', 'Errore durante il rifiuto.') }
+    finally { setActionLoading(null) }
   }
 
-  // ---------- Handlers: Delete offer ----------
+  // ---------- Delete ----------
   const handleDeleteOffer = async () => {
     if (!deleteTarget) return
     try {
@@ -181,15 +310,24 @@ export default function OffersModuleV2() {
     setDeleteTarget(null)
   }
 
-  // ---------- Handlers: New offer ----------
+  // ---------- New offer ----------
   const openNewModal = () => {
-    setNewForm({ client: '', amount: '', validUntil: '', description: '', notes: '', interventionId: '' })
+    setNewForm({ client: '', validUntil: '', description: '', notes: '', interventionId: '' })
+    setLineItems([newLineItem()])
     setShowNewModal(true)
   }
 
   const handleCreateOffer = async () => {
-    if (!newForm.client || !newForm.amount) {
-      addToast('error', 'Cliente e importo sono obbligatori.')
+    if (!newForm.client) {
+      addToast('error', 'Il cliente è obbligatorio.')
+      return
+    }
+    if (lineItems.some(li => !li.description.trim())) {
+      addToast('error', 'Inserisci una descrizione per ogni voce.')
+      return
+    }
+    if (subtotal <= 0) {
+      addToast('error', 'L\'importo totale deve essere maggiore di zero.')
       return
     }
 
@@ -198,12 +336,18 @@ export default function OffersModuleV2() {
       return match ? Math.max(max, parseInt(match[1], 10)) : max
     }, 0)
     const number = `OFF-${new Date().getFullYear()}/${String(maxNum + 1).padStart(3, '0')}`
+
     try {
       await addOffer({
         number,
         client: newForm.client,
-        amount: parseFloat(newForm.amount),
-        vatRate: 22,
+        amount: subtotal,
+        lineItems: lineItems.map(({ id, ...rest }) => ({
+          description: rest.description,
+          qty: parseFloat(rest.qty) || 1,
+          unitPrice: parseFloat(rest.unitPrice) || 0,
+        })),
+        vatRate: VAT_RATE,
         status: 'draft',
         createdAt: new Date().toISOString(),
         validUntil: newForm.validUntil || null,
@@ -212,11 +356,10 @@ export default function OffersModuleV2() {
         description: newForm.description,
         notes: newForm.notes,
       })
-    } catch (err) {
+      setShowNewModal(false)
+    } catch {
       addToast('error', 'Errore durante la creazione dell\'offerta.')
-      return
     }
-    setShowNewModal(false)
   }
 
   // =======================================================================
@@ -283,7 +426,7 @@ export default function OffersModuleV2() {
               </thead>
               <tbody>
                 {filtered.map(offer => {
-                  const total = (offer.amount || 0) * (1 + (offer.vatRate || 22) / 100)
+                  const total = (offer.amount || 0) * (1 + (offer.vatRate || VAT_RATE) / 100)
                   const isExpired = offer.effectiveStatus === 'expired'
                   const isDeclined = offer.effectiveStatus === 'declined'
                   return (
@@ -295,8 +438,8 @@ export default function OffersModuleV2() {
                       <td className="px-4 py-3 font-mono font-semibold text-blue-700">{offer.number}</td>
                       <td className="px-4 py-3 text-gray-700">{offer.client}</td>
                       <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate">{offer.description || '-'}</td>
-                      <td className="px-4 py-3 text-right text-gray-700">{formatCurrency(offer.amount)}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-800">{formatCurrency(total)}</td>
+                      <td className="px-4 py-3 text-right text-gray-700 tabular-nums">{formatCurrency(offer.amount)}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-gray-800 tabular-nums">{formatCurrency(total)}</td>
                       <td className="px-4 py-3">
                         <span className={isExpired ? 'text-red-600 font-semibold' : 'text-gray-500'}>
                           {offer.validUntil ? formatDate(offer.validUntil) : '-'}
@@ -307,7 +450,6 @@ export default function OffersModuleV2() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
-                          {/* Detail button */}
                           <button
                             onClick={() => setDetailOffer(offer)}
                             className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -315,8 +457,6 @@ export default function OffersModuleV2() {
                           >
                             <Eye size={15} />
                           </button>
-
-                          {/* Draft: Send button */}
                           {offer.effectiveStatus === 'draft' && (
                             <button
                               onClick={() => handleSendOffer(offer)}
@@ -325,8 +465,6 @@ export default function OffersModuleV2() {
                               Invia
                             </button>
                           )}
-
-                          {/* Delete button */}
                           <button
                             onClick={() => setDeleteTarget(offer)}
                             className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -334,8 +472,6 @@ export default function OffersModuleV2() {
                           >
                             <Trash2 size={15} />
                           </button>
-
-                          {/* Sent: Accept / Decline */}
                           {offer.effectiveStatus === 'sent' && (
                             <>
                               <button
@@ -374,47 +510,24 @@ export default function OffersModuleV2() {
         isOpen={showNewModal}
         onClose={() => setShowNewModal(false)}
         title="Nuova Offerta"
-        subtitle="Crea un preventivo per riparazione o fornitura"
-        maxWidth="max-w-lg"
+        subtitle="Crea un preventivo di riparazione o fornitura con voci dettagliate"
+        maxWidth="max-w-2xl"
       >
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
-            <select
-              value={newForm.client}
-              onChange={e => setNewForm(prev => ({ ...prev, client: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
-            >
-              <option value="">Seleziona cliente...</option>
-              {uniqueClients.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descrizione</label>
-            <input
-              type="text"
-              value={newForm.description}
-              onChange={e => setNewForm(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-              placeholder="Es. Riparazione ecografo, fornitura ricambi..."
-            />
-          </div>
-
+          {/* Row 1: Cliente + Valida fino al */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Importo (netto)</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={newForm.amount}
-                onChange={e => setNewForm(prev => ({ ...prev, amount: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                placeholder="0.00"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
+              <select
+                value={newForm.client}
+                onChange={e => setNewForm(prev => ({ ...prev, client: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                <option value="">Seleziona cliente...</option>
+                {uniqueClients.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Valida fino al</label>
@@ -427,6 +540,38 @@ export default function OffersModuleV2() {
             </div>
           </div>
 
+          {/* Descrizione generale */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Oggetto preventivo</label>
+            <input
+              type="text"
+              value={newForm.description}
+              onChange={e => setNewForm(prev => ({ ...prev, description: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+              placeholder="Es. Riparazione ecografo Siemens ACUSON, fornitura ricambi..."
+            />
+          </div>
+
+          {/* Line items editor */}
+          <LineItemsEditor lineItems={lineItems} onChange={setLineItems} />
+
+          {/* Totals */}
+          <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
+            <div className="flex justify-between text-gray-600">
+              <span>Imponibile</span>
+              <span className="tabular-nums font-medium">{formatCurrency(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-gray-500">
+              <span>IVA ({VAT_RATE}%)</span>
+              <span className="tabular-nums">{formatCurrency(subtotal * VAT_RATE / 100)}</span>
+            </div>
+            <div className="flex justify-between font-semibold text-base border-t border-gray-200 pt-1 mt-1">
+              <span className="text-gray-700">Totale</span>
+              <span className="text-blue-700 tabular-nums">{formatCurrency(subtotal * (1 + VAT_RATE / 100))}</span>
+            </div>
+          </div>
+
+          {/* Intervento collegato */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Intervento collegato (opzionale)</label>
             <select
@@ -443,33 +588,17 @@ export default function OffersModuleV2() {
             </select>
           </div>
 
+          {/* Note */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
             <textarea
-              rows={3}
+              rows={2}
               value={newForm.notes}
               onChange={e => setNewForm(prev => ({ ...prev, notes: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
-              placeholder="Note aggiuntive..."
+              placeholder="Note aggiuntive, condizioni di pagamento..."
             />
           </div>
-
-          {newForm.amount && (
-            <div className="bg-gray-50 rounded-lg p-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Imponibile:</span>
-                <span className="text-gray-700">{formatCurrency(parseFloat(newForm.amount) || 0)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">IVA (22%):</span>
-                <span className="text-gray-700">{formatCurrency((parseFloat(newForm.amount) || 0) * 0.22)}</span>
-              </div>
-              <div className="flex justify-between font-semibold border-t border-gray-200 pt-1 mt-1">
-                <span className="text-gray-700">Totale:</span>
-                <span className="text-blue-700">{formatCurrency((parseFloat(newForm.amount) || 0) * 1.22)}</span>
-              </div>
-            </div>
-          )}
 
           <div className="flex justify-end gap-3 pt-2">
             <button
@@ -480,7 +609,7 @@ export default function OffersModuleV2() {
             </button>
             <button
               onClick={handleCreateOffer}
-              disabled={!newForm.client || !newForm.amount}
+              disabled={!newForm.client || subtotal <= 0}
               className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <Plus size={15} /> Crea Offerta
@@ -497,33 +626,38 @@ export default function OffersModuleV2() {
         onClose={() => setDetailOffer(null)}
         title={`Offerta ${detailOffer?.number || ''}`}
         subtitle={detailOffer?.client}
-        maxWidth="max-w-lg"
+        maxWidth="max-w-2xl"
       >
         {detailOffer && (() => {
-          const total = (detailOffer.amount || 0) * (1 + (detailOffer.vatRate || 22) / 100)
+          const vatRate = detailOffer.vatRate || VAT_RATE
+          const total = (detailOffer.amount || 0) * (1 + vatRate / 100)
           const linkedIntervention = detailOffer.interventionId
             ? interventions.find(i => i.id === detailOffer.interventionId)
             : null
+          const hasLineItems = detailOffer.lineItems?.length > 0
 
           return (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <StatusChip status={detailOffer.effectiveStatus || detailOffer.status} />
-                {detailOffer.effectiveStatus === 'expired' && (
-                  <span className="text-xs font-semibold text-red-600">SCADUTA</span>
-                )}
-                {detailOffer.effectiveStatus === 'declined' && (
-                  <span className="text-xs font-semibold text-red-600">RIFIUTATA</span>
-                )}
               </div>
 
               {detailOffer.description && (
                 <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
-                  <p className="text-xs text-blue-600 font-medium mb-1">Descrizione</p>
+                  <p className="text-xs text-blue-600 font-medium mb-1">Oggetto</p>
                   <p className="text-sm text-gray-800">{detailOffer.description}</p>
                 </div>
               )}
 
+              {/* Line items table */}
+              {hasLineItems && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">Voci preventivo</p>
+                  <LineItemsTable lineItems={detailOffer.lineItems} />
+                </div>
+              )}
+
+              {/* Summary grid */}
               <div className="grid grid-cols-2 gap-3 bg-gray-50 rounded-lg p-4">
                 <div>
                   <p className="text-xs text-gray-400">Numero</p>
@@ -535,15 +669,15 @@ export default function OffersModuleV2() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Imponibile</p>
-                  <p className="text-sm font-medium text-gray-800">{formatCurrency(detailOffer.amount)}</p>
+                  <p className="text-sm font-medium text-gray-800 tabular-nums">{formatCurrency(detailOffer.amount)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">IVA ({detailOffer.vatRate || 22}%)</p>
-                  <p className="text-sm font-medium text-gray-800">{formatCurrency((detailOffer.amount || 0) * ((detailOffer.vatRate || 22) / 100))}</p>
+                  <p className="text-xs text-gray-400">IVA ({vatRate}%)</p>
+                  <p className="text-sm font-medium text-gray-800 tabular-nums">{formatCurrency((detailOffer.amount || 0) * vatRate / 100)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Totale</p>
-                  <p className="text-sm font-bold text-gray-800">{formatCurrency(total)}</p>
+                  <p className="text-sm font-bold text-gray-800 tabular-nums">{formatCurrency(total)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Data Creazione</p>
