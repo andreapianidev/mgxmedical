@@ -43,9 +43,9 @@ export default function ContractsModuleV2() {
 
   // --- KPIs ---
   const kpis = useMemo(() => {
-    const attivi = contracts.filter(c => c.status === 'active').length
-    const inScadenza = contracts.filter(c => c.status === 'expiring').length
-    const valTotale = contracts.filter(c => c.status === 'active').reduce((s, c) => s + (c.value || 0), 0)
+    const attivi = contracts.filter(c => getEffectiveStatus(c) === 'active').length
+    const inScadenza = contracts.filter(c => getEffectiveStatus(c) === 'expiring').length
+    const valTotale = contracts.filter(c => getEffectiveStatus(c) === 'active').reduce((s, c) => s + (c.value || 0), 0)
     return { attivi, inScadenza, valTotale }
   }, [contracts])
 
@@ -60,19 +60,21 @@ export default function ContractsModuleV2() {
         c.contact?.toLowerCase().includes(q)
       )
     }
-    if (statusTab === 'Attivi') list = list.filter(c => c.status === 'active')
-    else if (statusTab === 'In Scadenza') list = list.filter(c => c.status === 'expiring')
-    else if (statusTab === 'Scaduti') list = list.filter(c => c.status === 'expired')
+    if (statusTab === 'Attivi') list = list.filter(c => getEffectiveStatus(c) === 'active')
+    else if (statusTab === 'In Scadenza') list = list.filter(c => getEffectiveStatus(c) === 'expiring')
+    else if (statusTab === 'Scaduti') list = list.filter(c => getEffectiveStatus(c) === 'expired')
 
     if (typeFilter !== 'Tutti') list = list.filter(c => c.contractType === typeFilter)
     return list
   }, [contracts, search, statusTab, typeFilter])
 
-  // --- Expiring helpers ---
-  const isExpiringSoon = (c) => {
-    if (!c.endDate) return false
+  // --- Compute effective status from dates ---
+  const getEffectiveStatus = (c) => {
+    if (!c.endDate) return c.status || 'active'
     const daysLeft = Math.ceil((new Date(c.endDate) - new Date()) / (1000 * 60 * 60 * 24))
-    return daysLeft > 0 && daysLeft <= 30
+    if (daysLeft <= 0) return 'expired'
+    if (daysLeft <= 30) return 'expiring'
+    return 'active'
   }
 
   // --- Form modal ---
@@ -197,9 +199,9 @@ export default function ContractsModuleV2() {
             <tbody>
               {filtered.map(c => {
                 const tBadge = typeBadge(c.contractType)
-                const expSoon = isExpiringSoon(c)
+                const effStatus = getEffectiveStatus(c)
                 return (
-                  <tr key={c.id} className={`border-b border-gray-50 hover:bg-gray-50 transition-colors ${expSoon ? 'border-l-4 border-l-orange-400' : ''}`}>
+                  <tr key={c.id} className={`border-b border-gray-50 hover:bg-gray-50 transition-colors ${effStatus === 'expiring' ? 'border-l-4 border-l-orange-400' : ''}`}>
                     <td className="px-4 py-3 font-mono font-medium text-gray-800">{c.code}</td>
                     <td className="px-4 py-3 text-gray-700">{c.client}</td>
                     <td className="px-4 py-3">
@@ -215,7 +217,7 @@ export default function ContractsModuleV2() {
                       <span className="block text-gray-400">{c.slaResolutionHours ? `${c.slaResolutionHours}h` : '-'}</span>
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700 font-medium">{c.devicesCount}</td>
-                    <td className="px-4 py-3 text-center"><StatusChip status={c.status} /></td>
+                    <td className="px-4 py-3 text-center"><StatusChip status={effStatus} /></td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button onClick={() => openDetail(c)} title="Dettagli" className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 hover:text-blue-600">
@@ -241,10 +243,10 @@ export default function ContractsModuleV2() {
       <Modal isOpen={detailModal.open} onClose={closeDetail} title="Dettaglio Contratto" subtitle={detailModal.contract ? `${detailModal.contract.code} — ${detailModal.contract.client}` : ''} maxWidth="max-w-xl">
         {detailModal.contract && (() => {
           const c = detailModal.contract
-          const expSoon = isExpiringSoon(c)
+          const effStatus = getEffectiveStatus(c)
           return (
             <div className="space-y-4">
-              {expSoon && (
+              {effStatus === 'expiring' && (
                 <div className="flex items-start gap-2 p-3 bg-orange-50 border border-orange-300 rounded-lg">
                   <AlertTriangle size={18} className="text-orange-600 mt-0.5 flex-shrink-0" />
                   <p className="text-sm text-orange-800 font-medium">Questo contratto scade entro 30 giorni. Contattare il cliente per il rinnovo.</p>
@@ -310,7 +312,7 @@ export default function ContractsModuleV2() {
                   <span className="text-xs text-gray-500">Dispositivi coperti:</span>
                   <span className="text-sm font-bold text-gray-800">{c.devicesCount}</span>
                 </div>
-                <StatusChip status={c.status} />
+                <StatusChip status={effStatus} />
               </div>
             </div>
           )
@@ -372,19 +374,9 @@ export default function ContractsModuleV2() {
               <input type="number" min={0} value={form.slaResolutionHours} onChange={e => updateField('slaResolutionHours', Number(e.target.value))} placeholder="es. 8" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">N. Dispositivi</label>
-              <input type="number" min={0} value={form.devicesCount} onChange={e => updateField('devicesCount', Number(e.target.value))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Stato</label>
-              <select value={form.status} onChange={e => updateField('status', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
-                <option value="active">Attivo</option>
-                <option value="expiring">In scadenza</option>
-                <option value="expired">Scaduto</option>
-              </select>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">N. Dispositivi</label>
+            <input type="number" min={0} value={form.devicesCount} onChange={e => updateField('devicesCount', Number(e.target.value))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Categorie coperte (separate da virgola)</label>
