@@ -27,6 +27,14 @@ const emptyContract = {
   devicesCount: 0, coveredCategories: [], status: 'active',
 }
 
+function getEffectiveStatus(c) {
+  if (!c.endDate) return c.status || 'active'
+  const daysLeft = Math.ceil((new Date(c.endDate) - new Date()) / (1000 * 60 * 60 * 24))
+  if (daysLeft <= 0) return 'expired'
+  if (daysLeft <= 30) return 'expiring'
+  return 'active'
+}
+
 export default function ContractsModuleV2() {
   const { contracts, addContract, updateContract, deleteContract } = useGlobalStore()
   const { addToast } = useToast()
@@ -67,15 +75,6 @@ export default function ContractsModuleV2() {
     if (typeFilter !== 'Tutti') list = list.filter(c => c.contractType === typeFilter)
     return list
   }, [contracts, search, statusTab, typeFilter])
-
-  // --- Compute effective status from dates ---
-  const getEffectiveStatus = (c) => {
-    if (!c.endDate) return c.status || 'active'
-    const daysLeft = Math.ceil((new Date(c.endDate) - new Date()) / (1000 * 60 * 60 * 24))
-    if (daysLeft <= 0) return 'expired'
-    if (daysLeft <= 30) return 'expiring'
-    return 'active'
-  }
 
   // --- Form modal ---
   const openAdd = () => {
