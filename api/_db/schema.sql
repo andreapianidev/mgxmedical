@@ -269,6 +269,23 @@ CREATE TABLE IF NOT EXISTS attachments (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Fatture
+CREATE TABLE IF NOT EXISTS invoices (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001',
+  number TEXT UNIQUE,
+  client TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  vat_rate NUMERIC DEFAULT 22,
+  status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'issued', 'paid', 'overdue')),
+  issue_date TIMESTAMPTZ,
+  due_date DATE,
+  paid_at TIMESTAMPTZ,
+  intervention_id UUID REFERENCES interventions(id),
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Activity log (audit trail)
 CREATE TABLE IF NOT EXISTS activity_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -314,3 +331,5 @@ CREATE INDEX IF NOT EXISTS idx_shifts_date ON shifts(shift_date);
 CREATE INDEX IF NOT EXISTS idx_attachments_intervention ON attachments(intervention_id);
 CREATE INDEX IF NOT EXISTS idx_activity_tenant ON activity_log(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_fleet_tenant ON fleet(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_tenant ON invoices(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);

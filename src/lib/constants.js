@@ -265,6 +265,12 @@ export const NAV_ITEMS = [
     roles: [ROLES.ADMIN, ROLES.TECHNICIAN],
   },
   {
+    id: 'billing',
+    label: 'Fatturazione',
+    icon: 'Receipt',
+    roles: [ROLES.ADMIN, ROLES.SECRETARY],
+  },
+  {
     id: 'notifications',
     label: 'Notifiche',
     icon: 'Bell',

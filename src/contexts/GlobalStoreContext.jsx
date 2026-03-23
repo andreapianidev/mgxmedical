@@ -17,6 +17,7 @@ export function GlobalStoreProvider({ children }) {
   const [fleet, setFleet] = useState([])
   const [attachments, setAttachments] = useState([])
   const [activityLog, setActivityLog] = useState([])
+  const [invoices, setInvoices] = useState([])
   const [users, setUsers] = useState([])
 
   const [loading, setLoading] = useState(true)
@@ -45,6 +46,8 @@ export function GlobalStoreProvider({ children }) {
   useEffect(() => { equipmentRef.current = equipment }, [equipment])
   const fleetRef = useRef(fleet)
   useEffect(() => { fleetRef.current = fleet }, [fleet])
+  const invoicesRef = useRef(invoices)
+  useEffect(() => { invoicesRef.current = invoices }, [invoices])
 
   // --- Initial data fetch ---
   useEffect(() => {
@@ -66,13 +69,14 @@ export function GlobalStoreProvider({ children }) {
           api.get('/fleet'),
           api.get('/attachments'),
           api.get('/activity-log'),
+          api.get('/invoices'),
         ])
         const v = (i) => results[i].status === 'fulfilled' ? results[i].value : []
         const [
           devData, intData, whData, conData, offData,
           maintData, calData, shiftData, notifData,
-          eqData, fleetData, attData, logData,
-        ] = [v(0),v(1),v(2),v(3),v(4),v(5),v(6),v(7),v(8),v(9),v(10),v(11),v(12)]
+          eqData, fleetData, attData, logData, invData,
+        ] = [v(0),v(1),v(2),v(3),v(4),v(5),v(6),v(7),v(8),v(9),v(10),v(11),v(12),v(13)]
 
         // Fetch users separately (non-blocking if it fails)
         let usersData = []
@@ -92,6 +96,7 @@ export function GlobalStoreProvider({ children }) {
         setFleet(fleetData)
         setAttachments(attData)
         setActivityLog(logData)
+        setInvoices(invData)
         setUsers(usersData)
         setLoading(false)
       } catch (err) {
@@ -675,6 +680,58 @@ export function GlobalStoreProvider({ children }) {
     }
   }, [])
 
+  // --- Invoices CRUD ---
+  const addInvoice = useCallback(async (invoice) => {
+    const tempId = crypto.randomUUID()
+    const optimistic = { ...invoice, id: tempId, createdAt: new Date().toISOString() }
+    setInvoices(prev => [optimistic, ...prev])
+    try {
+      const created = await api.post('/invoices', invoice)
+      setInvoices(prev => prev.map(i => i.id === tempId ? created : i))
+      return created
+    } catch (err) {
+      setInvoices(prev => prev.filter(i => i.id !== tempId))
+      throw err
+    }
+  }, [])
+
+  const updateInvoice = useCallback(async (id, updates) => {
+    setInvoices(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i))
+    try {
+      const updated = await api.put(`/invoices/${id}`, updates)
+      setInvoices(prev => prev.map(i => i.id === id ? updated : i))
+    } catch (err) {
+      const fresh = await api.get('/invoices')
+      setInvoices(fresh)
+      throw err
+    }
+  }, [])
+
+  const markInvoicePaid = useCallback(async (id) => {
+    setInvoices(prev => prev.map(i =>
+      i.id === id ? { ...i, status: 'paid', paidAt: new Date().toISOString() } : i
+    ))
+    try {
+      const updated = await api.post(`/invoices/${id}/mark-paid`)
+      setInvoices(prev => prev.map(i => i.id === id ? updated : i))
+    } catch (err) {
+      const fresh = await api.get('/invoices')
+      setInvoices(fresh)
+      throw err
+    }
+  }, [])
+
+  const deleteInvoice = useCallback(async (id) => {
+    const prev = invoicesRef.current
+    setInvoices(p => p.filter(i => i.id !== id))
+    try {
+      await api.delete(`/invoices/${id}`)
+    } catch (err) {
+      setInvoices(prev)
+      throw err
+    }
+  }, [])
+
   // --- Activity Log ---
   const logActivity = useCallback(async (entry) => {
     const tempId = crypto.randomUUID()
@@ -696,7 +753,7 @@ export function GlobalStoreProvider({ children }) {
     // Data
     devices, interventions, warehouse, contracts, offers,
     schedMaint, calEvents, shifts, notifications, equipment,
-    fleet, attachments, activityLog, users, unreadCount,
+    fleet, attachments, activityLog, invoices, users, unreadCount,
     // Loading state
     loading, error,
     // Interventions
@@ -724,6 +781,8 @@ export function GlobalStoreProvider({ children }) {
     addFleet, updateFleet, deleteFleet,
     // Attachments
     addAttachment,
+    // Invoices
+    addInvoice, updateInvoice, markInvoicePaid, deleteInvoice,
     // Activity
     logActivity,
   }

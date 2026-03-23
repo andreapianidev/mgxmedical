@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../../contexts/GlobalStoreContext'
-import { formatCurrency, formatDate, generateId } from '../../lib/utils'
+import { formatCurrency, formatDate } from '../../lib/utils'
 import SectionHeader from '../shared/SectionHeader'
 import SearchBar from '../shared/SearchBar'
 import KpiCard from '../shared/KpiCard'

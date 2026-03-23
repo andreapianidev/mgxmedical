@@ -21,6 +21,32 @@ export default async function handler(req, res) {
   const sql = neon(process.env.DATABASE_URL);
 
   try {
+    // --- 0. Ensure new tables exist ---
+    await sql`
+      CREATE TABLE IF NOT EXISTS invoices (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tenant_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001',
+        number TEXT UNIQUE,
+        client TEXT NOT NULL,
+        amount NUMERIC NOT NULL,
+        vat_rate NUMERIC DEFAULT 22,
+        status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'issued', 'paid', 'overdue')),
+        issue_date TIMESTAMPTZ,
+        due_date DATE,
+        paid_at TIMESTAMPTZ,
+        intervention_id UUID REFERENCES interventions(id),
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+
+    // Clean re-seedable tables (no unique constraints)
+    await sql`DELETE FROM scheduled_maintenance WHERE tenant_id = ${TENANT_ID}`;
+    await sql`DELETE FROM calendar_events WHERE tenant_id = ${TENANT_ID}`;
+    await sql`DELETE FROM shifts WHERE tenant_id = ${TENANT_ID}`;
+    await sql`DELETE FROM attachments WHERE tenant_id = ${TENANT_ID}`;
+    await sql`DELETE FROM activity_log WHERE tenant_id = ${TENANT_ID}`;
+
     // --- 1. Seed Users ---
     const users = [
       { email: 'a.ferretti@mgxmedical.com', password: 'admin123', name: 'Alessandro Ferretti', avatar: 'AF', role: 'admin', color: '#1B4F72' },
@@ -193,6 +219,123 @@ export default async function handler(req, res) {
       `;
     }
 
+    // --- 10. Seed Scheduled Maintenance ---
+    const maintItems = [
+      { deviceName: 'Ventilatore Polmonare Maquet SERVO-U', structure: 'Osp. San Raffaele', techName: 'Marco Rossi', scheduledDate: '2026-04-15', status: 'planned', frequency: 'Semestrale', notes: 'Verifica sensori + test circuito paziente' },
+      { deviceName: 'Monitor Multiparametrico Philips IntelliVue MX800', structure: 'Osp. San Raffaele', techName: 'Marco Rossi', scheduledDate: '2026-03-28', status: 'planned', frequency: 'Trimestrale', notes: 'Calibrazione moduli SpO2, NIBP, ECG' },
+      { deviceName: 'Ecografo Portatile GE Venue Go', structure: 'Osp. Niguarda', techName: 'Marco Rossi', scheduledDate: '2026-02-10', status: 'completed', frequency: 'Annuale', notes: 'Manutenzione preventiva annuale completata', completedAt: '2026-02-10T14:30:00Z' },
+      { deviceName: 'Defibrillatore Zoll R-Series Plus', structure: 'Osp. Niguarda', techName: 'Marco Rossi', scheduledDate: '2026-03-01', status: 'overdue', frequency: 'Semestrale', notes: 'Test scarica, verifica batteria, controllo piastre' },
+      { deviceName: 'Pompa Infusione B. Braun Infusomat Space', structure: 'Osp. San Raffaele', techName: 'Marco Rossi', scheduledDate: '2026-05-20', status: 'planned', frequency: 'Trimestrale', notes: 'Verifica accuratezza flusso e occlusione' },
+    ];
+
+    for (const m of maintItems) {
+      const devRow = await sql`SELECT id FROM devices WHERE name = ${m.deviceName.split(' ').slice(0, 2).join(' ')} AND tenant_id = ${TENANT_ID} LIMIT 1`;
+      const deviceId = devRow.length > 0 ? devRow[0].id : null;
+      await sql`
+        INSERT INTO scheduled_maintenance (tenant_id, device_id, device_name, structure, tech_name, scheduled_date, status, frequency, notes, completed_at)
+        VALUES (${TENANT_ID}, ${deviceId}, ${m.deviceName}, ${m.structure}, ${m.techName}, ${m.scheduledDate}, ${m.status}, ${m.frequency}, ${m.notes}, ${m.completedAt || null})
+      `;
+    }
+
+    // --- 11. Seed Calendar Events ---
+    const calItems = [
+      { title: 'PM Ventilatore SERVO-U', eventType: 'pm', eventDate: '2026-04-15', startTime: '09:00', endTime: '12:00', color: '#2E86C1' },
+      { title: 'PM Monitor IntelliVue MX800', eventType: 'pm', eventDate: '2026-03-28', startTime: '10:00', endTime: '12:00', color: '#2E86C1' },
+      { title: 'Intervento INT-2402 — Calibrazione', eventType: 'intervention', eventDate: '2026-03-25', startTime: '08:30', endTime: '13:00', color: '#E67E22' },
+      { title: 'Reperibilita Marco Rossi', eventType: 'standby', eventDate: '2026-03-24', startTime: '18:00', endTime: '08:00', color: '#8E44AD' },
+      { title: 'Riunione team tecnico', eventType: 'other', eventDate: '2026-03-26', startTime: '14:00', endTime: '15:30', color: '#27AE60' },
+      { title: 'Scadenza garanzia Defibrillatore Zoll', eventType: 'alert', eventDate: '2025-11-20', color: '#C0392B' },
+      { title: 'PM Defibrillatore Zoll (scaduta)', eventType: 'pm', eventDate: '2026-03-01', startTime: '09:00', endTime: '11:00', color: '#C0392B' },
+      { title: 'Consegna ricambi GE Healthcare', eventType: 'other', eventDate: '2026-04-02', startTime: '10:00', endTime: '10:30', color: '#7F8C8D' },
+    ];
+
+    for (const c of calItems) {
+      await sql`
+        INSERT INTO calendar_events (tenant_id, title, event_type, event_date, start_time, end_time, color)
+        VALUES (${TENANT_ID}, ${c.title}, ${c.eventType}, ${c.eventDate}, ${c.startTime || null}, ${c.endTime || null}, ${c.color || null})
+      `;
+    }
+
+    // --- 12. Seed Shifts ---
+    const shiftItems = [
+      { techName: 'Marco Rossi', shiftType: 'standby', shiftDate: '2026-03-24', startTime: '18:00', endTime: '08:00' },
+      { techName: 'Marco Rossi', shiftType: 'standby', shiftDate: '2026-03-25', startTime: '18:00', endTime: '08:00' },
+      { techName: 'Alessandro Ferretti', shiftType: 'standby', shiftDate: '2026-03-26', startTime: '18:00', endTime: '08:00' },
+      { techName: 'Alessandro Ferretti', shiftType: 'standby', shiftDate: '2026-03-27', startTime: '18:00', endTime: '08:00' },
+      { techName: 'Marco Rossi', shiftType: 'day', shiftDate: '2026-03-24', startTime: '08:00', endTime: '17:00' },
+      { techName: 'Marco Rossi', shiftType: 'day', shiftDate: '2026-03-25', startTime: '08:00', endTime: '17:00' },
+      { techName: 'Marco Rossi', shiftType: 'day', shiftDate: '2026-03-26', startTime: '08:00', endTime: '17:00' },
+      { techName: 'Alessandro Ferretti', shiftType: 'day', shiftDate: '2026-03-28', startTime: '08:00', endTime: '17:00' },
+    ];
+
+    for (const s of shiftItems) {
+      const techRow = await sql`SELECT id FROM users WHERE name = ${s.techName} AND tenant_id = ${TENANT_ID} LIMIT 1`;
+      const techId = techRow.length > 0 ? techRow[0].id : null;
+      await sql`
+        INSERT INTO shifts (tenant_id, tech_id, tech_name, shift_type, shift_date, start_time, end_time)
+        VALUES (${TENANT_ID}, ${techId}, ${s.techName}, ${s.shiftType}, ${s.shiftDate}, ${s.startTime}, ${s.endTime})
+      `;
+    }
+
+    // --- 13. Seed Attachments ---
+    const attItems = [
+      { code: 'INT-2401', phase: 'PRE', fileName: 'ventilatore_pre_guasto.jpg', techName: 'Marco Rossi', description: 'Foto pannello allarmi prima dell\'intervento' },
+      { code: 'INT-2401', phase: 'DURANTE', fileName: 'sensore_pressione_rimosso.jpg', techName: 'Marco Rossi', description: 'Sensore pressione prossimale rimosso per sostituzione' },
+      { code: 'INT-2401', phase: 'POST', fileName: 'ventilatore_post_riparazione.jpg', techName: 'Marco Rossi', description: 'Pannello dopo riparazione — nessun allarme attivo' },
+      { code: 'INT-2401', phase: 'DOCUMENTI', fileName: 'rapporto_intervento_INT2401.pdf', techName: 'Marco Rossi', description: 'Rapporto tecnico firmato' },
+      { code: 'INT-2404', phase: 'PRE', fileName: 'pompa_errore_occlusione.jpg', techName: 'Marco Rossi', description: 'Display con errore occlusione persistente' },
+      { code: 'INT-2404', phase: 'DURANTE', fileName: 'meccanismo_peristaltico.jpg', techName: 'Marco Rossi', description: 'Meccanismo peristaltico durante revisione' },
+      { code: 'INT-2404', phase: 'POST', fileName: 'pompa_test_ok.jpg', techName: 'Marco Rossi', description: 'Test di flusso completato con successo' },
+    ];
+
+    for (const a of attItems) {
+      const intRow = await sql`SELECT id FROM interventions WHERE code = ${a.code} AND tenant_id = ${TENANT_ID} LIMIT 1`;
+      const interventionId = intRow.length > 0 ? intRow[0].id : null;
+      await sql`
+        INSERT INTO attachments (tenant_id, intervention_id, phase, file_url, file_name, tech_name, description)
+        VALUES (${TENANT_ID}, ${interventionId}, ${a.phase}, ${'/uploads/' + a.fileName}, ${a.fileName}, ${a.techName}, ${a.description})
+      `;
+    }
+
+    // --- 14. Seed Activity Log ---
+    const logItems = [
+      { userName: 'Alessandro Ferretti', action: 'user.login', entityType: 'user', details: { ip: '192.168.1.100' } },
+      { userName: 'Marco Rossi', action: 'user.login', entityType: 'user', details: { ip: '192.168.1.105' } },
+      { userName: 'Marco Rossi', action: 'intervention.completed', entityType: 'intervention', details: { code: 'INT-2401', device: 'Ventilatore Polmonare' } },
+      { userName: 'Marco Rossi', action: 'intervention.acknowledged', entityType: 'intervention', details: { code: 'INT-2405', device: 'Ecografo Portatile' } },
+      { userName: 'Sara Colombo', action: 'offer.created', entityType: 'offer', details: { number: 'OFF-2024/002', client: 'Osp. Niguarda' } },
+      { userName: 'Alessandro Ferretti', action: 'contract.expiry_alert', entityType: 'contract', details: { code: 'C001', client: 'Osp. San Raffaele' } },
+      { userName: 'Sara Colombo', action: 'offer.created', entityType: 'offer', details: { number: 'OFF-2024/003', client: 'Clinica Humanitas' } },
+      { userName: 'Marco Rossi', action: 'intervention.completed', entityType: 'intervention', details: { code: 'INT-2404', device: 'Pompa Infusione' } },
+      { userName: 'Alessandro Ferretti', action: 'warehouse.stock_alert', entityType: 'warehouse', details: { item: 'Modulo SpO2 IntelliVue', qty: 2 } },
+      { userName: 'Sara Colombo', action: 'user.login', entityType: 'user', details: { ip: '192.168.1.110' } },
+    ];
+
+    for (const l of logItems) {
+      const userRow = await sql`SELECT id FROM users WHERE name = ${l.userName} AND tenant_id = ${TENANT_ID} LIMIT 1`;
+      const userId = userRow.length > 0 ? userRow[0].id : null;
+      await sql`
+        INSERT INTO activity_log (tenant_id, user_id, user_name, action, entity_type, details)
+        VALUES (${TENANT_ID}, ${userId}, ${l.userName}, ${l.action}, ${l.entityType}, ${JSON.stringify(l.details)})
+      `;
+    }
+
+    // --- 15. Seed Invoices ---
+    const invoiceItems = [
+      { number: 'FT-2024/001', client: 'Osp. San Raffaele', amount: 42500, vatRate: 22, status: 'paid', issueDate: '2024-07-15T10:00:00Z', dueDate: '2024-08-15', paidAt: '2024-08-10T09:30:00Z', notes: 'Canone semestrale contratto Full Service C001' },
+      { number: 'FT-2024/002', client: 'Osp. Niguarda', amount: 3200, vatRate: 22, status: 'sent', issueDate: '2024-12-01T10:00:00Z', dueDate: '2025-01-01', notes: 'Intervento correttivo defibrillatore — fuori garanzia' },
+      { number: 'FT-2025/001', client: 'Osp. San Raffaele', amount: 42500, vatRate: 22, status: 'issued', issueDate: '2025-01-15T10:00:00Z', dueDate: '2025-02-15', notes: 'Canone semestrale contratto Full Service C001 (II semestre)' },
+      { number: 'FT-2025/002', client: 'Clinica Humanitas', amount: 18000, vatRate: 22, status: 'draft', dueDate: '2025-06-30', notes: 'Contratto Preventiva Only — rinnovo annuale' },
+    ];
+
+    for (const inv of invoiceItems) {
+      await sql`
+        INSERT INTO invoices (tenant_id, number, client, amount, vat_rate, status, issue_date, due_date, paid_at, notes)
+        VALUES (${TENANT_ID}, ${inv.number}, ${inv.client}, ${inv.amount}, ${inv.vatRate}, ${inv.status}, ${inv.issueDate || null}, ${inv.dueDate || null}, ${inv.paidAt || null}, ${inv.notes || null})
+        ON CONFLICT (number) DO NOTHING
+      `;
+    }
+
     return res.status(200).json({
       ok: true,
       seeded: {
@@ -205,6 +348,12 @@ export default async function handler(req, res) {
         notifications: notifItems.length,
         fleet: fleetItems.length,
         equipment: equipItems.length,
+        scheduledMaintenance: maintItems.length,
+        calendarEvents: calItems.length,
+        shifts: shiftItems.length,
+        attachments: attItems.length,
+        activityLog: logItems.length,
+        invoices: invoiceItems.length,
       },
     });
   } catch (err) {

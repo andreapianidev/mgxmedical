@@ -25,6 +25,7 @@ import PhotoDocsModule from './components/modules/PhotoDocsModule'
 import NotificationsCenterV2 from './components/modules/NotificationsCenterV2'
 import MLEngineModule from './components/modules/MLEngineModule'
 import CloudStatusPanel from './components/modules/CloudStatusPanel'
+import BillingModuleV2 from './components/modules/BillingModuleV2'
 
 function AppRoutes() {
   const { user, loading } = useAuth()
@@ -72,6 +73,7 @@ function AppRoutes() {
           <Route path="/photos" element={<PhotoDocsModule />} />
           <Route path="/notifications" element={<NotificationsCenterV2 />} />
           <Route path="/mlengine" element={<MLEngineModule />} />
+          <Route path="/billing" element={<BillingModuleV2 />} />
           <Route path="/cloud" element={<CloudStatusPanel />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
